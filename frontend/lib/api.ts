@@ -145,3 +145,49 @@ export const tronApi = {
   setDepositAddress: (address: string) => api.post('/tron/deposit-address', { address }),
   getDepositBalance: () => api.get('/tron/deposit-balance'),
 };
+
+// 区块链多链 API
+export const blockchainApi = {
+  // 获取支持的网络和代币
+  getNetworks: () => api.get('/blockchain/networks'),
+
+  // 获取指定网络的代币列表
+  getTokens: (network: string) => api.get(`/blockchain/networks/${network}/tokens`),
+
+  // 获取链上余额
+  getBalance: (address: string, network: string, token: string) =>
+    api.get(`/blockchain/balance`, { params: { address, network, token } }),
+
+  // 验证地址
+  validateAddress: (address: string, network: string) =>
+    api.post(`/blockchain/validate-address`, { address, network }),
+
+  // 获取或设置钱包地址
+  getWalletAddress: (network: string) => api.get(`/blockchain/wallet-address/${network}`),
+  setWalletAddress: (network: string, address: string) =>
+    api.post(`/blockchain/wallet-address`, { network, address }),
+
+  // 托管订单操作
+  createEscrow: (orderId: string, network: string, buyerAddress: string, sellerAddress: string, amount: string, token: string) =>
+    api.post(`/blockchain/escrow/create`, { orderId, network, buyerAddress, sellerAddress, amount, token }),
+
+  fundEscrow: (orderId: string, network: string, amount: string, token: string) =>
+    api.post(`/blockchain/escrow/fund`, { orderId, network, amount, token }),
+
+  getEscrowStatus: (orderId: string, network: string) =>
+    api.get(`/blockchain/escrow/status`, { params: { orderId, network } }),
+};
+
+// 行情数据 API
+export const marketApi = {
+  // 获取价格
+  getPrices: (symbols: string[]) => api.get('/market/prices', { params: { symbols } }),
+
+  // 获取历史数据
+  getHistory: (symbol: string, days: number) =>
+    api.get('/market/history', { params: { symbol, days } }),
+
+  // 获取 K线数据
+  getKlines: (symbol: string, interval: string, limit: number) =>
+    api.get('/market/klines', { params: { symbol, interval, limit } }),
+};

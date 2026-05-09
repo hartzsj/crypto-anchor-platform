@@ -10,7 +10,66 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// 用户表
+// ========== 区块链网络配置 ==========
+model BlockchainNetwork {
+  id          String   @id @default(uuid())
+  name        String   @unique  // TRON, BSC
+  displayName String   // TRON (TRC-20), BSC (BEP-20)
+  chainId     String?  // 链ID (BSC: 56, TRON: 无)
+  rpcUrl      String   // RPC节点地址
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tokens      Token[]
+  escrowContracts EscrowContract[]
+  walletAddresses WalletAddress[]
+  onchainOrders   OnchainOrder[]
+
+  @@index([name])
+  @@index([isActive])
+}
+
+// ========== 支持的代币 ==========
+model Token {
+  id              String   @id @default(uuid())
+  networkId       String
+  symbol          String   // USDT, BTC, ETH
+  name            String   // Tether USD, Bitcoin, Ethereum
+  contractAddress String?  // 代币合约地址 (USDT需要，原生币不需要)
+  decimals        Int      @default(18)
+  isNative        Boolean  @default(false)  // 是否原生币 (BTC, ETH)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  network         BlockchainNetwork @relation(fields: [networkId], references: [id])
+  walletBalances  WalletBalance[]
+
+  @@unique([networkId, symbol])
+  @@index([symbol])
+  @@index([isActive])
+}
+
+// ========== 托管合约配置 ==========
+model EscrowContract {
+  id            String   @id @default(uuid())
+  networkId     String
+  address       String   // 合约地址
+  abi           String   // JSON格式的ABI
+  deployTxHash  String?  // 部署交易哈希
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  network       BlockchainNetwork @relation(fields: [networkId], references: [id])
+  onchainOrders OnchainOrder[]
+
+  @@unique([networkId, address])
+  @@index([isActive])
+}
+
+// ========== 用户表 ==========
 model User {
   id            String   @id @default(uuid())
   email         String   @unique
@@ -24,6 +83,8 @@ model User {
   updatedAt     DateTime @updatedAt
 
   wallet        Wallet?
+  settings      UserSettings?
+  walletAddresses WalletAddress[]
   itemsPosted   Item[]
   ordersBuyer   Order[]  @relation("BuyerOrders")
   ordersSeller  Order[]  @relation("SellerOrders")
@@ -36,33 +97,82 @@ enum Role {
   ADMIN
 }
 
-// 钱包表
+// ========== 用户设置（通知偏好） ==========
+model UserSettings {
+  id            String   @id @default(uuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id])
+  emailNotify   Boolean  @default(true)
+  smsNotify     Boolean  @default(false)
+  notifyEvents  String[] @default(["order_paid", "order_shipped", "order_completed", "deposit_received"])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// ========== 钱包表 ==========
 model Wallet {
   id            String   @id @default(uuid())
   userId        String   @unique
   user          User     @relation(fields: [userId], references: [id])
-  balance       Decimal  @default(0) @db.Decimal(18, 8) // USDT余额，支持8位小数
-  frozenBalance Decimal  @default(0) @db.Decimal(18, 8) // 冻结余额（挂单中）
-  depositAddress String? @unique // TRON充值地址
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
+  balances      WalletBalance[]  // 多币种余额
   transactions  Transaction[]
 }
 
-// 交易记录表
+// ========== 多币种余额 ==========
+model WalletBalance {
+  id            String   @id @default(uuid())
+  walletId      String
+  tokenId       String
+  balance       Decimal  @default(0) @db.Decimal(18, 8)  // 可用余额
+  frozenBalance Decimal  @default(0) @db.Decimal(18, 8)  // 冻结余额（托管中）
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  wallet        Wallet   @relation(fields: [walletId], references: [id])
+  token         Token    @relation(fields: [tokenId], references: [id])
+
+  @@unique([walletId, tokenId])
+  @@index([walletId])
+}
+
+// ========== 多链钱包地址 ==========
+model WalletAddress {
+  id            String   @id @default(uuid())
+  userId        String
+  networkId     String
+  address       String   // 链上地址
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user          User     @relation(fields: [userId], references: [id])
+  network       BlockchainNetwork @relation(fields: [networkId], references: [id])
+
+  @@unique([userId, networkId])
+  @@index([address])
+}
+
+// ========== 交易记录表 ==========
 model Transaction {
   id            String          @id @default(uuid())
   walletId      String
+  tokenId       String?         // 关联的代币
   wallet        Wallet          @relation(fields: [walletId], references: [id])
   type          TransactionType
   amount        Decimal         @db.Decimal(18, 8)
   balanceBefore Decimal         @db.Decimal(18, 8)
   balanceAfter  Decimal         @db.Decimal(18, 8)
   description   String?
+  txHash        String?         // 链上交易哈希（如果是链上交易）
   orderId       String?         // 关联订单（如果是交易）
   order         Order?          @relation(fields: [orderId], references: [id])
   createdAt     DateTime        @default(now())
+
+  @@index([type])
+  @@index([walletId])
+  @@index([txHash])
 }
 
 enum TransactionType {
@@ -73,7 +183,40 @@ enum TransactionType {
   ORDER_REFUND  // 订单退款
 }
 
-// 物品表
+// ========== 链上托管订单 ==========
+model OnchainOrder {
+  id            String   @id @default(uuid())
+  orderId       String   @unique  // 平台订单ID
+  networkId     String
+  contractId    String
+  escrowId      String   // 智能合约中的订单ID (bytes32)
+  buyerAddress  String   // 买家链上地址
+  sellerAddress String   // 卖家链上地址
+  amount        String   // 金额 (BigInt as string)
+  tokenId       String   // 代币ID
+  status        OnchainOrderStatus @default(CREATED)
+  fundedTxHash  String?  // 充值交易哈希
+  releaseTxHash String?  // 释放交易哈希
+  refundTxHash  String?  // 退款交易哈希
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  network       BlockchainNetwork @relation(fields: [networkId], references: [id])
+  contract      EscrowContract    @relation(fields: [contractId], references: [id])
+
+  @@index([orderId])
+  @@index([escrowId])
+  @@index([status])
+}
+
+enum OnchainOrderStatus {
+  CREATED   // 已创建，等待充值
+  FUNDED    // 已充值，资金托管中
+  RELEASED  // 已释放给卖家
+  REFUNDED  // 已退款给买家
+}
+
+// ========== 物品表 ==========
 model Item {
   id            String        @id @default(uuid())
   sellerId      String
@@ -106,7 +249,7 @@ enum ItemStatus {
   SOLD        // 已售出
 }
 
-// 订单表
+// ========== 订单表 ==========
 model Order {
   id            String        @id @default(uuid())
   itemId        String
@@ -116,21 +259,27 @@ model Order {
   sellerId      String
   seller        User          @relation("SellerOrders", fields: [sellerId], references: [id])
   price         Decimal       @db.Decimal(18, 8) // 成交价格
+
+  // 多链支持
+  networkId     String?       // 选择的区块链网络
+  tokenId       String?       // 支付代币ID
+  isOnchain     Boolean       @default(false) // 是否使用链上托管
+
   status        OrderStatus   @default(PENDING)
-  
+
   // 物流信息
   logisticsCompany String?    // 物流公司
   trackingNumber   String?    // 物流单号
-  
+
   // 时间戳
   paidAt          DateTime?
   shippedAt       DateTime?
   completedAt     DateTime?
   canceledAt      DateTime?
-  
+
   // 自动确认收货倒计时
   autoConfirmAt   DateTime?
-  
+
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
@@ -140,6 +289,8 @@ model Order {
   @@index([status])
   @@index([buyerId])
   @@index([sellerId])
+  @@index([networkId])
+  @@index([isOnchain])
 }
 
 enum OrderStatus {
@@ -151,7 +302,7 @@ enum OrderStatus {
   DISPUTED      // 争议中
 }
 
-// 评价表
+// ========== 评价表 ==========
 model Review {
   id            String   @id @default(uuid())
   orderId       String   @unique
