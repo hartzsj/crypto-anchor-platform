@@ -52,11 +52,11 @@ export const THEMES = {
   midnight: {
     name: '午夜黑',
     nameEn: 'Midnight Black',
-    accent: '#18181B',
-    accentHover: '#09090B',
-    accentLight: '#27272A',
-    accentSubtle: '#E4E4E7',
-    preview: 'bg-[#18181B]',
+    accent: '#3F3F46',  // 稍亮的灰色，避免和 text (#18181B) 冲突
+    accentHover: '#27272A',
+    accentLight: '#52525B',
+    accentSubtle: '#E4E4E7',  // 保持浅色，确保 accent 文字可见
+    preview: 'bg-[#3F3F46]',
   },
   gold: {
     name: '金琥珀',
@@ -89,7 +89,7 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<ThemeKey>('rose');
+  const [theme, setThemeState] = useState<ThemeKey>('ocean');
 
   useEffect(() => {
     // 从 localStorage 恢复主题

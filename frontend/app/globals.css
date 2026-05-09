@@ -15,11 +15,11 @@
   --text-muted: #71717A;
   --text-subtle: #A1A1AA;
 
-  /* Accent - Deep Rose */
-  --accent: #BE185D;
-  --accent-hover: #9F1239;
-  --accent-light: #F43F5E;
-  --accent-subtle: #FEE2E2;
+  /* Accent - Ocean Blue (默认主题) */
+  --accent: #0369A1;
+  --accent-hover: #075985;
+  --accent-light: #0EA5E9;
+  --accent-subtle: #E0F2FE;
 
   /* Border */
   --border: #E4E4E7;
