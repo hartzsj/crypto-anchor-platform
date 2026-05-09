@@ -219,14 +219,19 @@ export default function CreateItemPage() {
             <div className="space-y-3">
               <label className="block text-sm font-medium text-[var(--text)]">分类 *</label>
               <div className="relative">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)]">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none">
                   <TagIcon />
+                </div>
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <path d="M4 6l4 4 4-4" />
+                  </svg>
                 </div>
                 <select
                   required
                   value={form.category}
                   onChange={(e) => setForm({ ...form, category: e.target.value })}
-                  className="w-full pl-12 pr-4 py-3 bg-[var(--canvas)] border border-[var(--border)] rounded-xl text-[var(--text)] focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-subtle)] transition-all duration-150"
+                  className="w-full pl-12 pr-10 py-3 bg-[var(--canvas)] border border-[var(--border)] rounded-xl text-[var(--text)] focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-subtle)] transition-all duration-150 appearance-none cursor-pointer"
                 >
                   <option value="">选择分类</option>
                   {CATEGORIES.map((cat) => (

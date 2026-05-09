@@ -25,8 +25,8 @@ export class AuthService {
     // 创建用户
     const user = await this.usersService.create(email, username, password, nickname);
 
-    // 返回 JWT
-    return this.generateToken(user.id, user.email, user.role);
+    // 返回 JWT，包含完整用户信息
+    return this.generateToken(user.id, user.email, user.role, user.nickname, user.avatar);
   }
 
   async login(email: string, password: string) {
@@ -40,7 +40,8 @@ export class AuthService {
       throw new UnauthorizedException('邮箱或密码错误');
     }
 
-    return this.generateToken(user.id, user.email, user.role);
+    // 返回 JWT，包含完整用户信息
+    return this.generateToken(user.id, user.email, user.role, user.nickname, user.avatar);
   }
 
   async validateUser(userId: string) {
@@ -51,7 +52,7 @@ export class AuthService {
     return user;
   }
 
-  private generateToken(userId: string, email: string, role: string) {
+  private generateToken(userId: string, email: string, role: string, nickname?: string, avatar?: string | null) {
     const payload = { sub: userId, email, role };
     return {
       access_token: this.jwtService.sign(payload),
@@ -59,11 +60,9 @@ export class AuthService {
         id: userId,
         email,
         role,
+        nickname: nickname || email.split('@')[0],
+        avatar: avatar || null,
       },
     };
-  }
-
-  private compareHash(plain: string, hash: string): Promise<boolean> {
-    return bcrypt.compare(plain, hash);
   }
 }

@@ -31,8 +31,9 @@ export class TronAdapter implements BlockchainAdapter, OnModuleInit {
   }
 
   async onModuleInit() {
-    // 初始化 TronWeb
-    this.tronWeb = TronWeb.createInstance({
+    // 初始化 TronWeb - v6.x 需要通过 default.TronWeb 访问构造函数
+    const TronWebClass = TronWeb.default?.TronWeb || TronWeb.TronWeb || TronWeb;
+    this.tronWeb = new TronWebClass({
       fullHost: this.config.rpcUrl,
       privateKey: this.configService.get('TRON_PRIVATE_KEY', ''),
     });

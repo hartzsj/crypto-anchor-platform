@@ -1,10 +1,18 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
+import express from 'express';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-  
+  const app = await NestFactory.create(AppModule, {
+    bodyParser: true,
+    rawBody: true,
+  });
+
+  // 增加请求体大小限制（支持 base64 图片上传）
+  app.use(express.json({ limit: '10mb' }));
+  app.use(express.urlencoded({ limit: '10mb', extended: true }));
+
   // 启用 CORS - 动态允许前端域名
   app.enableCors({
     origin: (origin, callback) => {

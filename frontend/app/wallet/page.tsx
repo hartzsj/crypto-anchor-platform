@@ -478,7 +478,9 @@ export default function WalletPage() {
           <h2 className="text-lg font-semibold text-[var(--text)] mb-6">交易记录</h2>
 
           {transactions.length === 0 ? (
-            <p className="text-[var(--text-muted)] text-center py-12">暂无交易记录</p>
+            <div className="flex flex-col items-center justify-center py-12">
+              <p className="text-[var(--text-muted)]">暂无交易记录</p>
+            </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">

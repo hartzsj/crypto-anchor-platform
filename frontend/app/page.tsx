@@ -254,7 +254,7 @@ export default function HomePage() {
               ))}
             </div>
           ) : items.length === 0 ? (
-            <div className="text-center py-20 bg-[var(--canvas)] rounded-2xl border border-[var(--border)]">
+            <div className="flex flex-col items-center justify-center py-20 bg-[var(--canvas)] rounded-2xl border border-[var(--border)]">
               <PackageIcon />
               <p className="mt-6 text-lg text-[var(--text-muted)]">暂无物品，成为第一个发布者</p>
               {isAuthenticated && (

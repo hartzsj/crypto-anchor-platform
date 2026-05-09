@@ -243,7 +243,7 @@ export default function OrdersPage() {
             <div className="skeleton w-16 h-16 rounded-2xl" />
           </div>
         ) : orders.length === 0 ? (
-          <div className="bg-[var(--surface)] rounded-2xl border border-[var(--border)] p-12 text-center">
+          <div className="flex flex-col items-center justify-center py-20 bg-[var(--surface)] rounded-2xl border border-[var(--border)]">
             <EmptyIcon />
             <p className="mt-6 text-lg text-[var(--text-muted)]">暂无订单</p>
           </div>

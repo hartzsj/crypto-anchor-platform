@@ -458,8 +458,8 @@ export default function AdminPage() {
                 <div className="skeleton w-12 h-12 rounded-2xl" />
               </div>
             ) : pendingItems.length === 0 ? (
-              <div className="bg-[var(--surface)] rounded-2xl border border-[var(--border)] p-8 text-center">
-                <div className="w-16 h-16 rounded-xl bg-green-100 flex items-center justify-center text-green-600 mx-auto mb-4">
+              <div className="bg-[var(--surface)] rounded-2xl border border-[var(--border)] p-8 flex flex-col items-center justify-center">
+                <div className="w-16 h-16 rounded-xl bg-green-100 flex items-center justify-center text-green-600 mb-4">
                   <CheckIcon />
                 </div>
                 <p className="text-[var(--text-muted)]">暂无待审核物品</p>
@@ -755,8 +755,8 @@ export default function AdminPage() {
                 <div className="skeleton w-12 h-12 rounded-2xl" />
               </div>
             ) : disputedOrders.length === 0 ? (
-              <div className="bg-[var(--surface)] rounded-2xl border border-[var(--border)] p-8 text-center">
-                <div className="w-16 h-16 rounded-xl bg-[var(--accent-subtle)] flex items-center justify-center text-[var(--accent)] mx-auto mb-4">
+              <div className="bg-[var(--surface)] rounded-2xl border border-[var(--border)] p-8 flex flex-col items-center justify-center">
+                <div className="w-16 h-16 rounded-xl bg-[var(--accent-subtle)] flex items-center justify-center text-[var(--accent)] mb-4">
                   <ScaleIcon />
                 </div>
                 <p className="text-[var(--text-muted)]">暂无争议订单</p>

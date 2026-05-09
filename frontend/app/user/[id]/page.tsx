@@ -186,7 +186,7 @@ export default function UserPage() {
         {activeTab === 'items' && (
           <div className="bg-[var(--surface)] rounded-2xl border border-[var(--border)] shadow-[var(--shadow-sm)] p-8">
             {items.length === 0 ? (
-              <div className="text-center py-12">
+              <div className="flex flex-col items-center justify-center py-12">
                 <EmptyPackageIcon />
                 <p className="mt-6 text-[var(--text-muted)]">该用户暂无发布的物品</p>
               </div>
@@ -228,7 +228,7 @@ export default function UserPage() {
         {activeTab === 'reviews' && (
           <div className="bg-[var(--surface)] rounded-2xl border border-[var(--border)] shadow-[var(--shadow-sm)] p-8">
             {reviews.length === 0 ? (
-              <div className="text-center py-12">
+              <div className="flex flex-col items-center justify-center py-12">
                 <EmptyCommentIcon />
                 <p className="mt-6 text-[var(--text-muted)]">该用户暂无评价</p>
               </div>

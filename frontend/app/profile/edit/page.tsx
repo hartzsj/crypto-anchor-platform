@@ -36,29 +36,63 @@ const KeyIcon = () => (
   </svg>
 );
 
+const UploadIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+    <path d="M12 4v12M8 8l4-4 4 4M4 20h16" />
+  </svg>
+);
+
 export default function EditProfilePage() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, login } = useAuth();
   const router = useRouter();
   const [nickname, setNickname] = useState('');
   const [avatar, setAvatar] = useState('');
+  const [bio, setBio] = useState('');
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!isAuthenticated) {
       router.push('/login');
       return;
     }
-    setNickname(user?.email?.split('@')[0] || '');
-  }, [isAuthenticated, user, router]);
+    loadProfile();
+  }, [isAuthenticated, router]);
+
+  const loadProfile = async () => {
+    try {
+      const response = await usersApi.getMe();
+      const userData = response.data;
+      setNickname(userData.nickname || userData.email?.split('@')[0] || '');
+      setAvatar(userData.avatar || '');
+      setBio(userData.bio || '');
+    } catch (error) {
+      console.error('Failed to load profile:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     try {
-      await usersApi.updateProfile({
+      const response = await usersApi.updateProfile({
         nickname,
         avatar: avatar || undefined,
+        bio: bio || undefined,
       });
+
+      // 更新 localStorage 中的用户信息
+      const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+      const updatedUser = { ...storedUser, nickname, avatar };
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+
+      // 更新 AuthContext
+      if (user) {
+        login(user.email, ''); // 这会触发重新获取用户信息
+      }
+
       alert('资料已更新');
       router.push('/profile');
     } catch (err: any) {
@@ -67,6 +101,39 @@ export default function EditProfilePage() {
       setSaving(false);
     }
   };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // 验证文件类型
+    if (!file.type.startsWith('image/')) {
+      alert('请选择图片文件');
+      return;
+    }
+
+    // 验证文件大小（最大 2MB）
+    if (file.size > 2 * 1024 * 1024) {
+      alert('图片大小不能超过 2MB');
+      return;
+    }
+
+    // 转换为 base64（简单方案，实际生产环境应上传到服务器）
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64 = event.target?.result as string;
+      setAvatar(base64);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-[100dvh] flex items-center justify-center bg-[var(--canvas)]">
+        <div className="skeleton w-16 h-16 rounded-2xl" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-[100dvh] py-8 bg-[var(--canvas)]">
@@ -92,14 +159,27 @@ export default function EditProfilePage() {
             <div className="space-y-3">
               <label className="block text-sm font-medium text-[var(--text)]">头像</label>
               <div className="flex items-center gap-4">
-                <div className="w-20 h-20 rounded-full bg-[var(--accent)] flex items-center justify-center shadow-[var(--shadow-md)]">
+                <div className="w-20 h-20 rounded-full bg-[var(--accent)] flex items-center justify-center shadow-[var(--shadow-md)] overflow-hidden">
                   {avatar ? (
-                    <img src={avatar} alt="" className="w-full h-full object-cover rounded-full" />
+                    <img src={avatar} alt="" className="w-full h-full object-cover" />
                   ) : (
                     <span className="text-white text-2xl font-bold">{nickname?.[0]?.toUpperCase() || 'U'}</span>
                   )}
                 </div>
-                <div className="flex-1">
+                <div className="flex-1 space-y-3">
+                  {/* 上传按钮 */}
+                  <label className="flex items-center gap-2 px-4 py-2 bg-[var(--accent)] text-white rounded-lg font-medium cursor-pointer hover:bg-[var(--accent-hover)] transition-all duration-150">
+                    <UploadIcon />
+                    上传图片
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                    />
+                  </label>
+
+                  {/* URL 输入 */}
                   <div className="relative">
                     <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)]">
                       <ImageIcon />
@@ -109,10 +189,10 @@ export default function EditProfilePage() {
                       value={avatar}
                       onChange={(e) => setAvatar(e.target.value)}
                       className="w-full pl-12 pr-4 py-3 bg-[var(--canvas)] border border-[var(--border)] rounded-xl text-[var(--text)] placeholder:text-[var(--text-subtle)] focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-subtle)] transition-all duration-150"
-                      placeholder="输入头像图片URL"
+                      placeholder="或输入头像图片URL"
                     />
                   </div>
-                  <p className="text-xs text-[var(--text-subtle)] mt-2">支持 jpg、png 等图片链接</p>
+                  <p className="text-xs text-[var(--text-subtle)]">支持 jpg、png 格式，建议尺寸 200x200，最大 2MB</p>
                 </div>
               </div>
             </div>

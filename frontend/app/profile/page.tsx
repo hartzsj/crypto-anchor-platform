@@ -290,7 +290,7 @@ export default function ProfilePage() {
               </Link>
             </div>
             {items.length === 0 ? (
-              <div className="text-center py-12">
+              <div className="flex flex-col items-center justify-center py-12">
                 <EmptyIcon />
                 <p className="mt-6 text-[var(--text-muted)]">暂无发布物品</p>
                 <Link

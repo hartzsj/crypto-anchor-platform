@@ -311,14 +311,9 @@ body {
   color: var(--accent);
 }
 
-/* Link Styles */
+/* Link Styles - base styles only (colors handled by utility classes) */
 a {
-  color: var(--accent);
   transition: color var(--duration-fast) var(--ease-out);
-}
-
-a:hover {
-  color: var(--accent-hover);
 }
 
 /* Status Badge */

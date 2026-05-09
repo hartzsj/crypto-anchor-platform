@@ -120,16 +120,23 @@ export default function ItemsPage() {
               {/* Category */}
               <div>
                 <label className="block text-sm font-medium text-[var(--text)] mb-2">分类</label>
-                <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  className="w-full px-4 py-3 bg-[var(--canvas)] border border-[var(--border)] rounded-xl text-[var(--text)] focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-subtle)] transition-all duration-150"
-                >
-                  <option value="">全部分类</option>
-                  {CATEGORIES.map((cat) => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
-                </select>
+                <div className="relative">
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <path d="M4 6l4 4 4-4" />
+                    </svg>
+                  </div>
+                  <select
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    className="w-full px-4 pr-10 py-3 bg-[var(--canvas)] border border-[var(--border)] rounded-xl text-[var(--text)] focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-subtle)] transition-all duration-150 appearance-none cursor-pointer"
+                  >
+                    <option value="">全部分类</option>
+                    {CATEGORIES.map((cat) => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               {/* Min Price */}
@@ -177,7 +184,7 @@ export default function ItemsPage() {
             ))}
           </div>
         ) : items.length === 0 ? (
-          <div className="text-center py-20 bg-[var(--surface)] rounded-2xl border border-[var(--border)]">
+          <div className="flex flex-col items-center justify-center py-20 bg-[var(--surface)] rounded-2xl border border-[var(--border)]">
             <PackageIcon />
             <p className="mt-6 text-lg text-[var(--text-muted)]">暂无物品</p>
           </div>

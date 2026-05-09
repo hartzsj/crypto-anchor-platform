@@ -1,4 +1,4 @@
-import { IsString, MinLength, MaxLength, IsOptional, IsUrl } from 'class-validator';
+import { IsString, MinLength, MaxLength, IsOptional, IsUrl, Matches } from 'class-validator';
 
 export class UpdateProfileDto {
   @IsOptional()
@@ -13,6 +13,10 @@ export class UpdateProfileDto {
   bio?: string;
 
   @IsOptional()
-  @IsUrl({}, { message: '头像必须是有效的URL' })
+  @IsString()
+  @Matches(
+    /^(https?:\/\/|data:image\/)/,
+    { message: '头像必须是有效的URL或图片数据' }
+  )
   avatar?: string;
 }

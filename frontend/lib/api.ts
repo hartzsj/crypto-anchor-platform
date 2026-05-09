@@ -176,6 +176,10 @@ export const blockchainApi = {
 
   getEscrowStatus: (orderId: string, network: string) =>
     api.get(`/blockchain/escrow/status`, { params: { orderId, network } }),
+
+  // 获取用户链上地址余额
+  getDepositBalance: (network: string) =>
+    api.get(`/blockchain/deposit-balance/${network}`),
 };
 
 // 行情数据 API
