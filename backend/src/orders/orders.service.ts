@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, BadRequestException, ForbiddenException 
 import { PrismaService } from '../prisma/prisma.service';
 import { WalletsService } from '../wallets/wallets.service';
 import { ItemsService } from '../items/items.service';
+import { NotificationsService, NotificationType } from '../notifications/notifications.service';
 import { Cron, CronExpression } from '@nestjs/schedule';
 
 @Injectable()
@@ -10,6 +11,7 @@ export class OrdersService {
     private prisma: PrismaService,
     private walletsService: WalletsService,
     private itemsService: ItemsService,
+    private notificationsService: NotificationsService,
   ) {}
 
   // 创建订单（买家下单）
@@ -41,7 +43,15 @@ export class OrdersService {
         status: 'PENDING',
         autoConfirmAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7天后自动确认
       },
+      include: { item: true },
     });
+
+    // 发送通知给买家和卖家
+    await this.notificationsService.sendBulkNotifications(
+      [buyerId, item.sellerId],
+      NotificationType.ORDER_CREATED,
+      { orderId: order.id, itemTitle: item.title },
+    );
 
     return order;
   }
@@ -69,19 +79,30 @@ export class OrdersService {
     await this.walletsService.freezeFunds(buyerId, Number(order.price), 'TRON', 'USDT');
 
     // 更新订单状态
-    return this.prisma.order.update({
+    const updatedOrder = await this.prisma.order.update({
       where: { id: orderId },
       data: {
         status: 'PAID',
         paidAt: new Date(),
       },
+      include: { item: true },
     });
+
+    // 发送通知给买家和卖家
+    await this.notificationsService.sendBulkNotifications(
+      [buyerId, order.sellerId],
+      NotificationType.ORDER_PAID,
+      { orderId: order.id, itemTitle: order.item?.title, amount: Number(order.price) },
+    );
+
+    return updatedOrder;
   }
 
   // 发货（卖家填写物流信息）
   async shipOrder(orderId: string, sellerId: string, logisticsCompany: string, trackingNumber: string) {
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },
+      include: { item: true },
     });
 
     if (!order) {
@@ -96,7 +117,7 @@ export class OrdersService {
       throw new BadRequestException('订单未支付，无法发货');
     }
 
-    return this.prisma.order.update({
+    const updatedOrder = await this.prisma.order.update({
       where: { id: orderId },
       data: {
         status: 'SHIPPED',
@@ -105,6 +126,20 @@ export class OrdersService {
         shippedAt: new Date(),
       },
     });
+
+    // 发送通知给买家
+    await this.notificationsService.sendNotification(
+      order.buyerId,
+      NotificationType.ORDER_SHIPPED,
+      {
+        orderId: order.id,
+        itemTitle: order.item?.title,
+        logisticsCompany,
+        trackingNumber,
+      },
+    );
+
+    return updatedOrder;
   }
 
   // 确认收货（买家）
@@ -132,6 +167,7 @@ export class OrdersService {
   private async completeOrder(orderId: string) {
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },
+      include: { item: true },
     });
 
     if (!order) {
@@ -152,19 +188,29 @@ export class OrdersService {
     await this.itemsService.markAsSold(order.itemId);
 
     // 更新订单状态
-    return this.prisma.order.update({
+    const updatedOrder = await this.prisma.order.update({
       where: { id: orderId },
       data: {
         status: 'COMPLETED',
         completedAt: new Date(),
       },
     });
+
+    // 发送通知给买家和卖家
+    await this.notificationsService.sendBulkNotifications(
+      [order.buyerId, order.sellerId],
+      NotificationType.ORDER_COMPLETED,
+      { orderId: order.id, itemTitle: order.item?.title },
+    );
+
+    return updatedOrder;
   }
 
   // 取消订单
   async cancelOrder(orderId: string, userId: string) {
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },
+      include: { item: true },
     });
 
     if (!order) {
@@ -185,19 +231,29 @@ export class OrdersService {
     }
 
     // 更新订单状态
-    return this.prisma.order.update({
+    const updatedOrder = await this.prisma.order.update({
       where: { id: orderId },
       data: {
         status: 'CANCELED',
         canceledAt: new Date(),
       },
     });
+
+    // 发送通知给买家和卖家
+    await this.notificationsService.sendBulkNotifications(
+      [order.buyerId, order.sellerId],
+      NotificationType.ORDER_CANCELED,
+      { orderId: order.id, itemTitle: order.item?.title },
+    );
+
+    return updatedOrder;
   }
 
   // 发起争议
   async disputeOrder(orderId: string, userId: string, reason: string) {
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },
+      include: { item: true },
     });
 
     if (!order) {
@@ -212,18 +268,28 @@ export class OrdersService {
       throw new BadRequestException('只能对已发货的订单发起争议');
     }
 
-    return this.prisma.order.update({
+    const updatedOrder = await this.prisma.order.update({
       where: { id: orderId },
       data: {
         status: 'DISPUTED',
       },
     });
+
+    // 发送通知给买家和卖家
+    await this.notificationsService.sendBulkNotifications(
+      [order.buyerId, order.sellerId],
+      NotificationType.DISPUTE_OPENED,
+      { orderId: order.id, itemTitle: order.item?.title, reason },
+    );
+
+    return updatedOrder;
   }
 
   // 仲裁处理（管理员）
   async resolveDispute(orderId: string, adminId: string, refund: boolean) {
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },
+      include: { item: true },
     });
 
     if (!order) {
@@ -238,13 +304,22 @@ export class OrdersService {
       // 退款给买家
       await this.walletsService.refund(order.buyerId, Number(order.price), orderId, 'TRON', 'USDT');
 
-      return this.prisma.order.update({
+      const updatedOrder = await this.prisma.order.update({
         where: { id: orderId },
         data: {
           status: 'CANCELED',
           canceledAt: new Date(),
         },
       });
+
+      // 发送通知给买家和卖家
+      await this.notificationsService.sendBulkNotifications(
+        [order.buyerId, order.sellerId],
+        NotificationType.DISPUTE_RESOLVED,
+        { orderId: order.id, itemTitle: order.item?.title, refund: true },
+      );
+
+      return updatedOrder;
     } else {
       // 放款给卖家
       return this.completeOrder(orderId);

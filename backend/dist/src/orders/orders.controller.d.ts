@@ -7,6 +7,24 @@ export declare class OrdersController {
     private ordersService;
     constructor(ordersService: OrdersService);
     createOrder(req: any, body: CreateOrderDto): Promise<{
+        item: {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            sellerId: string;
+            title: string;
+            description: string;
+            images: string[];
+            price: import("@prisma/client/runtime/library").Decimal;
+            category: string;
+            location: string | null;
+            serialNumber: string | null;
+            status: import("@prisma/client").$Enums.ItemStatus;
+            approvedBy: string | null;
+            approvedAt: Date | null;
+            rejectedReason: string | null;
+        };
+    } & {
         id: string;
         createdAt: Date;
         updatedAt: Date;
@@ -27,6 +45,24 @@ export declare class OrdersController {
         autoConfirmAt: Date | null;
     }>;
     payOrder(id: string, req: any): Promise<{
+        item: {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            sellerId: string;
+            title: string;
+            description: string;
+            images: string[];
+            price: import("@prisma/client/runtime/library").Decimal;
+            category: string;
+            location: string | null;
+            serialNumber: string | null;
+            status: import("@prisma/client").$Enums.ItemStatus;
+            approvedBy: string | null;
+            approvedAt: Date | null;
+            rejectedReason: string | null;
+        };
+    } & {
         id: string;
         createdAt: Date;
         updatedAt: Date;

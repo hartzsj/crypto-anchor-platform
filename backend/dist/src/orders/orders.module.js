@@ -13,12 +13,13 @@ const orders_controller_1 = require("./orders.controller");
 const prisma_service_1 = require("../prisma/prisma.service");
 const wallets_module_1 = require("../wallets/wallets.module");
 const items_module_1 = require("../items/items.module");
+const notifications_module_1 = require("../notifications/notifications.module");
 let OrdersModule = class OrdersModule {
 };
 exports.OrdersModule = OrdersModule;
 exports.OrdersModule = OrdersModule = __decorate([
     (0, common_1.Module)({
-        imports: [wallets_module_1.WalletsModule, items_module_1.ItemsModule],
+        imports: [wallets_module_1.WalletsModule, items_module_1.ItemsModule, notifications_module_1.NotificationsModule],
         controllers: [orders_controller_1.OrdersController],
         providers: [orders_service_1.OrdersService, prisma_service_1.PrismaService],
         exports: [orders_service_1.OrdersService],

@@ -14,15 +14,18 @@ const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma/prisma.service");
 const wallets_service_1 = require("../wallets/wallets.service");
 const items_service_1 = require("../items/items.service");
+const notifications_service_1 = require("../notifications/notifications.service");
 const schedule_1 = require("@nestjs/schedule");
 let OrdersService = class OrdersService {
     prisma;
     walletsService;
     itemsService;
-    constructor(prisma, walletsService, itemsService) {
+    notificationsService;
+    constructor(prisma, walletsService, itemsService, notificationsService) {
         this.prisma = prisma;
         this.walletsService = walletsService;
         this.itemsService = itemsService;
+        this.notificationsService = notificationsService;
     }
     async createOrder(buyerId, itemId) {
         const item = await this.itemsService.findOne(itemId);
@@ -45,7 +48,9 @@ let OrdersService = class OrdersService {
                 status: 'PENDING',
                 autoConfirmAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
             },
+            include: { item: true },
         });
+        await this.notificationsService.sendBulkNotifications([buyerId, item.sellerId], notifications_service_1.NotificationType.ORDER_CREATED, { orderId: order.id, itemTitle: item.title });
         return order;
     }
     async payOrder(orderId, buyerId) {
@@ -63,17 +68,21 @@ let OrdersService = class OrdersService {
             throw new common_1.BadRequestException('订单状态异常');
         }
         await this.walletsService.freezeFunds(buyerId, Number(order.price), 'TRON', 'USDT');
-        return this.prisma.order.update({
+        const updatedOrder = await this.prisma.order.update({
             where: { id: orderId },
             data: {
                 status: 'PAID',
                 paidAt: new Date(),
             },
+            include: { item: true },
         });
+        await this.notificationsService.sendBulkNotifications([buyerId, order.sellerId], notifications_service_1.NotificationType.ORDER_PAID, { orderId: order.id, itemTitle: order.item?.title, amount: Number(order.price) });
+        return updatedOrder;
     }
     async shipOrder(orderId, sellerId, logisticsCompany, trackingNumber) {
         const order = await this.prisma.order.findUnique({
             where: { id: orderId },
+            include: { item: true },
         });
         if (!order) {
             throw new common_1.NotFoundException('订单不存在');
@@ -84,7 +93,7 @@ let OrdersService = class OrdersService {
         if (order.status !== 'PAID') {
             throw new common_1.BadRequestException('订单未支付，无法发货');
         }
-        return this.prisma.order.update({
+        const updatedOrder = await this.prisma.order.update({
             where: { id: orderId },
             data: {
                 status: 'SHIPPED',
@@ -93,6 +102,13 @@ let OrdersService = class OrdersService {
                 shippedAt: new Date(),
             },
         });
+        await this.notificationsService.sendNotification(order.buyerId, notifications_service_1.NotificationType.ORDER_SHIPPED, {
+            orderId: order.id,
+            itemTitle: order.item?.title,
+            logisticsCompany,
+            trackingNumber,
+        });
+        return updatedOrder;
     }
     async confirmReceipt(orderId, buyerId) {
         const order = await this.prisma.order.findUnique({
@@ -112,23 +128,27 @@ let OrdersService = class OrdersService {
     async completeOrder(orderId) {
         const order = await this.prisma.order.findUnique({
             where: { id: orderId },
+            include: { item: true },
         });
         if (!order) {
             throw new common_1.NotFoundException('订单不存在');
         }
         await this.walletsService.transferToSeller(order.buyerId, order.sellerId, Number(order.price), orderId, 'TRON', 'USDT');
         await this.itemsService.markAsSold(order.itemId);
-        return this.prisma.order.update({
+        const updatedOrder = await this.prisma.order.update({
             where: { id: orderId },
             data: {
                 status: 'COMPLETED',
                 completedAt: new Date(),
             },
         });
+        await this.notificationsService.sendBulkNotifications([order.buyerId, order.sellerId], notifications_service_1.NotificationType.ORDER_COMPLETED, { orderId: order.id, itemTitle: order.item?.title });
+        return updatedOrder;
     }
     async cancelOrder(orderId, userId) {
         const order = await this.prisma.order.findUnique({
             where: { id: orderId },
+            include: { item: true },
         });
         if (!order) {
             throw new common_1.NotFoundException('订单不存在');
@@ -142,17 +162,20 @@ let OrdersService = class OrdersService {
         if (order.status === 'PAID') {
             await this.walletsService.refund(order.buyerId, Number(order.price), orderId, 'TRON', 'USDT');
         }
-        return this.prisma.order.update({
+        const updatedOrder = await this.prisma.order.update({
             where: { id: orderId },
             data: {
                 status: 'CANCELED',
                 canceledAt: new Date(),
             },
         });
+        await this.notificationsService.sendBulkNotifications([order.buyerId, order.sellerId], notifications_service_1.NotificationType.ORDER_CANCELED, { orderId: order.id, itemTitle: order.item?.title });
+        return updatedOrder;
     }
     async disputeOrder(orderId, userId, reason) {
         const order = await this.prisma.order.findUnique({
             where: { id: orderId },
+            include: { item: true },
         });
         if (!order) {
             throw new common_1.NotFoundException('订单不存在');
@@ -163,16 +186,19 @@ let OrdersService = class OrdersService {
         if (order.status !== 'SHIPPED') {
             throw new common_1.BadRequestException('只能对已发货的订单发起争议');
         }
-        return this.prisma.order.update({
+        const updatedOrder = await this.prisma.order.update({
             where: { id: orderId },
             data: {
                 status: 'DISPUTED',
             },
         });
+        await this.notificationsService.sendBulkNotifications([order.buyerId, order.sellerId], notifications_service_1.NotificationType.DISPUTE_OPENED, { orderId: order.id, itemTitle: order.item?.title, reason });
+        return updatedOrder;
     }
     async resolveDispute(orderId, adminId, refund) {
         const order = await this.prisma.order.findUnique({
             where: { id: orderId },
+            include: { item: true },
         });
         if (!order) {
             throw new common_1.NotFoundException('订单不存在');
@@ -182,13 +208,15 @@ let OrdersService = class OrdersService {
         }
         if (refund) {
             await this.walletsService.refund(order.buyerId, Number(order.price), orderId, 'TRON', 'USDT');
-            return this.prisma.order.update({
+            const updatedOrder = await this.prisma.order.update({
                 where: { id: orderId },
                 data: {
                     status: 'CANCELED',
                     canceledAt: new Date(),
                 },
             });
+            await this.notificationsService.sendBulkNotifications([order.buyerId, order.sellerId], notifications_service_1.NotificationType.DISPUTE_RESOLVED, { orderId: order.id, itemTitle: order.item?.title, refund: true });
+            return updatedOrder;
         }
         else {
             return this.completeOrder(orderId);
@@ -298,6 +326,7 @@ exports.OrdersService = OrdersService = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
         wallets_service_1.WalletsService,
-        items_service_1.ItemsService])
+        items_service_1.ItemsService,
+        notifications_service_1.NotificationsService])
 ], OrdersService);
 //# sourceMappingURL=orders.service.js.map

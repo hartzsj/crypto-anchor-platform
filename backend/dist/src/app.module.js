@@ -21,6 +21,7 @@ const tron_module_1 = require("./tron/tron.module");
 const admin_module_1 = require("./admin/admin.module");
 const blockchain_module_1 = require("./blockchain/blockchain.module");
 const market_module_1 = require("./market/market.module");
+const notifications_module_1 = require("./notifications/notifications.module");
 const app_controller_1 = require("./app.controller");
 const app_service_1 = require("./app.service");
 let AppModule = class AppModule {
@@ -49,6 +50,7 @@ exports.AppModule = AppModule = __decorate([
             admin_module_1.AdminModule,
             blockchain_module_1.BlockchainModule,
             market_module_1.MarketModule,
+            notifications_module_1.NotificationsModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],

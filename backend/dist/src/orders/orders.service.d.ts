@@ -1,12 +1,32 @@
 import { PrismaService } from '../prisma/prisma.service';
 import { WalletsService } from '../wallets/wallets.service';
 import { ItemsService } from '../items/items.service';
+import { NotificationsService } from '../notifications/notifications.service';
 export declare class OrdersService {
     private prisma;
     private walletsService;
     private itemsService;
-    constructor(prisma: PrismaService, walletsService: WalletsService, itemsService: ItemsService);
+    private notificationsService;
+    constructor(prisma: PrismaService, walletsService: WalletsService, itemsService: ItemsService, notificationsService: NotificationsService);
     createOrder(buyerId: string, itemId: string): Promise<{
+        item: {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            sellerId: string;
+            title: string;
+            description: string;
+            images: string[];
+            price: import("@prisma/client/runtime/library").Decimal;
+            category: string;
+            location: string | null;
+            serialNumber: string | null;
+            status: import("@prisma/client").$Enums.ItemStatus;
+            approvedBy: string | null;
+            approvedAt: Date | null;
+            rejectedReason: string | null;
+        };
+    } & {
         id: string;
         createdAt: Date;
         updatedAt: Date;
@@ -27,6 +47,24 @@ export declare class OrdersService {
         autoConfirmAt: Date | null;
     }>;
     payOrder(orderId: string, buyerId: string): Promise<{
+        item: {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            sellerId: string;
+            title: string;
+            description: string;
+            images: string[];
+            price: import("@prisma/client/runtime/library").Decimal;
+            category: string;
+            location: string | null;
+            serialNumber: string | null;
+            status: import("@prisma/client").$Enums.ItemStatus;
+            approvedBy: string | null;
+            approvedAt: Date | null;
+            rejectedReason: string | null;
+        };
+    } & {
         id: string;
         createdAt: Date;
         updatedAt: Date;

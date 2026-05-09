@@ -348,7 +348,7 @@ NEXT_PUBLIC_API_URL=http://localhost:13001/api
 - [x] 链上智能合约托管（TRON + BSC 测试网）
 - [x] 多币种支持（USDT、TRX、BNB、ETH）
 - [ ] 第三方验货服务
-- [ ] 邮件/短信通知
+- [x] 邮件/短信通知（SendGrid + Twilio 集成）
 - [ ] KYC 认证
 - [ ] 移动端 App
 - [x] K线图表和行情数据（CoinGecko API）
