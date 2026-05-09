@@ -370,8 +370,6 @@ NEXT_PUBLIC_API_URL=http://localhost:13001/api
 - ❌ 商业产品/服务
 - ❌ 企业内部使用
 
-商业授权请联系：zhoushuijie@gmail.com
-
 详见 [LICENSE](./LICENSE)
 
 ---
