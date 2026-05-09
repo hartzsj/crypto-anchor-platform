@@ -43,6 +43,42 @@ const STATUS_MAP: Record<string, string> = {
   DISPUTED: '争议中',
 };
 
+// SVG Icons
+const PackageIcon = () => (
+  <svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="1.5">
+    <rect x="4" y="8" width="24" height="18" rx="2" />
+    <path d="M4 12h24M16 8v18M10 8l6 4 6-4" />
+  </svg>
+);
+
+const TruckIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
+    <rect x="1" y="4" width="12" height="10" rx="1" />
+    <path d="M13 8h4l2 4v2h-6V8z" />
+    <circle cx="5" cy="14" r="2" />
+    <circle cx="15" cy="14" r="2" />
+  </svg>
+);
+
+const CheckIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M4 10l4 4 8-8" />
+  </svg>
+);
+
+const XIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M4 4l12 12M16 4l-12 12" />
+  </svg>
+);
+
+const EmptyIcon = () => (
+  <svg width="64" height="64" viewBox="0 0 64 64" fill="none" stroke="var(--text-muted)" strokeWidth="1">
+    <rect x="8" y="16" width="48" height="40" rx="4" />
+    <path d="M8 32h48M32 16v40" />
+  </svg>
+);
+
 export default function OrdersPage() {
   const { isAuthenticated } = useAuth();
   const router = useRouter();
@@ -81,11 +117,11 @@ export default function OrdersPage() {
     e.preventDefault();
     try {
       await ordersApi.ship(shipForm.orderId, shipForm.logisticsCompany, shipForm.trackingNumber);
-      alert('✅ 发货成功！');
+      alert('发货成功');
       setShipForm({ orderId: '', logisticsCompany: '', trackingNumber: '' });
       loadOrders();
     } catch (err: any) {
-      alert('❌ ' + (err.response?.data?.message || '发货失败'));
+      alert(err.response?.data?.message || '发货失败');
     }
   };
 
@@ -93,10 +129,10 @@ export default function OrdersPage() {
     if (!confirm('确认已收到物品？')) return;
     try {
       await ordersApi.confirm(orderId);
-      alert('✅ 确认收货成功！');
+      alert('确认收货成功');
       loadOrders();
     } catch (err: any) {
-      alert('❌ ' + (err.response?.data?.message || '确认收货失败'));
+      alert(err.response?.data?.message || '确认收货失败');
     }
   };
 
@@ -104,38 +140,42 @@ export default function OrdersPage() {
     if (!confirm('确认取消订单？')) return;
     try {
       await ordersApi.cancel(orderId);
-      alert('✅ 订单已取消');
+      alert('订单已取消');
       loadOrders();
     } catch (err: any) {
-      alert('❌ ' + (err.response?.data?.message || '取消失败'));
+      alert(err.response?.data?.message || '取消失败');
     }
   };
 
   return (
-    <div className="min-h-screen py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h1 className="text-4xl font-bold mb-8 bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-          我的订单
-        </h1>
+    <div className="min-h-[100dvh] py-8 bg-[var(--canvas)]">
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-[var(--text)]">
+            我的订单
+          </h1>
+          <p className="mt-2 text-[var(--text-muted)]">管理你的交易订单</p>
+        </div>
 
         {/* Tabs */}
-        <div className="flex space-x-4 mb-6">
+        <div className="flex gap-4 mb-8">
           <button
             onClick={() => setActiveTab('buy')}
-            className={`px-6 py-3 rounded-xl font-semibold transition-all ${
+            className={`px-6 py-3 rounded-xl font-semibold transition-all duration-150 ${
               activeTab === 'buy'
-                ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg'
-                : 'bg-white text-gray-700 hover:bg-gray-50'
+                ? 'bg-[var(--accent)] text-white shadow-[var(--shadow-md)]'
+                : 'bg-[var(--surface)] text-[var(--text)] border border-[var(--border)] hover:border-[var(--text-muted)]'
             }`}
           >
             我的购买
           </button>
           <button
             onClick={() => setActiveTab('sell')}
-            className={`px-6 py-3 rounded-xl font-semibold transition-all ${
+            className={`px-6 py-3 rounded-xl font-semibold transition-all duration-150 ${
               activeTab === 'sell'
-                ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg'
-                : 'bg-white text-gray-700 hover:bg-gray-50'
+                ? 'bg-[var(--accent)] text-white shadow-[var(--shadow-md)]'
+                : 'bg-[var(--surface)] text-[var(--text)] border border-[var(--border)] hover:border-[var(--text-muted)]'
             }`}
           >
             我的销售
@@ -144,14 +184,19 @@ export default function OrdersPage() {
 
         {/* Ship Form */}
         {activeTab === 'sell' && (
-          <div className="bg-white/80 backdrop-blur-xl p-6 rounded-2xl shadow-xl mb-6 border border-white/20">
-            <h3 className="font-bold mb-4 text-lg">发货</h3>
+          <div className="bg-[var(--surface)] p-6 rounded-2xl border border-[var(--border)] shadow-[var(--shadow-sm)] mb-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-[var(--accent-subtle)] flex items-center justify-center text-[var(--accent)]">
+                <TruckIcon />
+              </div>
+              <h3 className="text-lg font-semibold text-[var(--text)]">发货</h3>
+            </div>
             <form onSubmit={handleShip}>
               <div className="grid md:grid-cols-3 gap-4">
                 <select
                   value={shipForm.orderId}
                   onChange={(e) => setShipForm({ ...shipForm, orderId: e.target.value })}
-                  className="px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white/50"
+                  className="px-4 py-3 bg-[var(--canvas)] border border-[var(--border)] rounded-xl text-[var(--text)] focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-subtle)] transition-all duration-150"
                   required
                 >
                   <option value="">选择待发货订单</option>
@@ -168,21 +213,21 @@ export default function OrdersPage() {
                   placeholder="物流公司"
                   value={shipForm.logisticsCompany}
                   onChange={(e) => setShipForm({ ...shipForm, logisticsCompany: e.target.value })}
-                  className="px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white/50"
+                  className="px-4 py-3 bg-[var(--canvas)] border border-[var(--border)] rounded-xl text-[var(--text)] placeholder:text-[var(--text-subtle)] focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-subtle)] transition-all duration-150"
                   required
                 />
-                <div className="flex space-x-2">
+                <div className="flex gap-2">
                   <input
                     type="text"
                     placeholder="物流单号"
                     value={shipForm.trackingNumber}
                     onChange={(e) => setShipForm({ ...shipForm, trackingNumber: e.target.value })}
-                    className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white/50"
+                    className="flex-1 px-4 py-3 bg-[var(--canvas)] border border-[var(--border)] rounded-xl text-[var(--text)] placeholder:text-[var(--text-subtle)] focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-subtle)] transition-all duration-150"
                     required
                   />
                   <button
                     type="submit"
-                    className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-indigo-700 hover:to-purple-700 shadow-lg transition-all"
+                    className="px-6 py-3 bg-[var(--accent)] text-white rounded-xl font-semibold hover:bg-[var(--accent-hover)] transition-all duration-150 active:scale-[0.98]"
                   >
                     发货
                   </button>
@@ -195,48 +240,54 @@ export default function OrdersPage() {
         {/* Orders List */}
         {loading ? (
           <div className="flex justify-center items-center py-20">
-            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-600"></div>
+            <div className="skeleton w-16 h-16 rounded-2xl" />
           </div>
         ) : orders.length === 0 ? (
-          <div className="bg-white/50 backdrop-blur-lg rounded-2xl p-8 text-center text-gray-500">
-            <div className="text-6xl mb-4">📋</div>
-            <p className="text-xl">暂无订单</p>
+          <div className="bg-[var(--surface)] rounded-2xl border border-[var(--border)] p-12 text-center">
+            <EmptyIcon />
+            <p className="mt-6 text-lg text-[var(--text-muted)]">暂无订单</p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-4 stagger-container">
             {orders.map((order) => (
-              <div key={order.id} className="bg-white/80 backdrop-blur-xl p-6 rounded-2xl shadow-xl border border-white/20 hover:shadow-2xl transition-all">
-                <div className="flex justify-between items-start">
-                  <div className="flex items-start space-x-4">
-                    <div className="w-24 h-24 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex items-center justify-center flex-shrink-0">
+              <div key={order.id} className="bg-[var(--surface)] p-6 rounded-2xl border border-[var(--border)] shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-md)] transition-all duration-300">
+                <div className="flex justify-between items-start gap-6">
+                  <div className="flex items-start gap-4 flex-1">
+                    <div className="w-24 h-24 bg-[var(--canvas)] rounded-xl flex items-center justify-center flex-shrink-0">
                       {order.item.images?.[0] ? (
                         <img src={order.item.images[0]} alt="" className="w-full h-full object-cover rounded-xl" />
                       ) : (
-                        <span className="text-gray-400 text-3xl">📦</span>
+                        <PackageIcon />
                       )}
                     </div>
-                    <div>
-                      <Link href={`/items/${order.item.id}`} className="font-bold text-lg hover:text-indigo-600 transition-colors">
+                    <div className="flex-1 min-w-0">
+                      <Link
+                        href={`/items/${order.item.id}`}
+                        className="font-semibold text-lg text-[var(--text)] hover:text-[var(--accent)] transition-colors truncate block"
+                      >
                         {order.item.title}
                       </Link>
-                      <p className="text-indigo-600 font-bold text-xl mt-1">{order.price} USDT</p>
-                      <p className="text-sm text-gray-500 mt-1">
+                      <p className="text-[var(--accent)] font-bold text-xl mt-1 font-mono">
+                        {Number(order.price).toLocaleString()}
+                        <span className="text-sm font-medium text-[var(--text-muted)] ml-1">USDT</span>
+                      </p>
+                      <p className="text-sm text-[var(--text-muted)] mt-1">
                         {activeTab === 'buy' ? `卖家: ${order.seller?.nickname}` : `买家: ${order.buyer?.nickname}`}
                       </p>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm text-[var(--text-subtle)]">
                         {new Date(order.createdAt).toLocaleString('zh-CN')}
                       </p>
                     </div>
                   </div>
 
-                  <div className="text-right">
-                    <span className={`px-4 py-2 rounded-full text-sm font-semibold ${
-                      order.status === 'COMPLETED' ? 'bg-green-100 text-green-800' :
-                      order.status === 'PAID' ? 'bg-yellow-100 text-yellow-800' :
-                      order.status === 'SHIPPED' ? 'bg-blue-100 text-blue-800' :
-                      order.status === 'CANCELED' ? 'bg-gray-100 text-gray-800' :
-                      order.status === 'DISPUTED' ? 'bg-red-100 text-red-800' :
-                      'bg-orange-100 text-orange-800'
+                  <div className="text-right flex-shrink-0">
+                    <span className={`px-4 py-2 rounded-full text-sm font-medium ${
+                      order.status === 'COMPLETED' ? 'bg-green-100 text-green-700' :
+                      order.status === 'PAID' ? 'bg-yellow-100 text-yellow-700' :
+                      order.status === 'SHIPPED' ? 'bg-blue-100 text-blue-700' :
+                      order.status === 'CANCELED' ? 'bg-[var(--canvas)] text-[var(--text-muted)]' :
+                      order.status === 'DISPUTED' ? 'bg-red-100 text-red-700' :
+                      'bg-orange-100 text-orange-700'
                     }`}>
                       {STATUS_MAP[order.status]}
                     </span>
@@ -245,23 +296,26 @@ export default function OrdersPage() {
                       {activeTab === 'buy' && order.status === 'PENDING' && (
                         <button
                           onClick={() => handleCancel(order.id)}
-                          className="w-full text-sm bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-all"
+                          className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-[var(--canvas)] text-red-600 rounded-lg font-medium hover:bg-red-50 transition-all duration-150"
                         >
+                          <XIcon />
                           取消订单
                         </button>
                       )}
                       {activeTab === 'buy' && order.status === 'SHIPPED' && (
                         <button
                           onClick={() => handleConfirm(order.id)}
-                          className="w-full text-sm bg-gradient-to-r from-green-600 to-emerald-600 text-white px-4 py-2 rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all shadow-lg"
+                          className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-all duration-150 active:scale-[0.98]"
                         >
+                          <CheckIcon />
                           确认收货
                         </button>
                       )}
                       {order.trackingNumber && (
-                        <p className="text-xs text-gray-500 mt-2">
-                          📦 {order.logisticsCompany} - {order.trackingNumber}
-                        </p>
+                        <div className="flex items-center gap-2 text-xs text-[var(--text-muted)] mt-2">
+                          <TruckIcon />
+                          <span>{order.logisticsCompany} - {order.trackingNumber}</span>
+                        </div>
                       )}
                     </div>
                   </div>

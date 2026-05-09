@@ -23,6 +23,33 @@ interface Item {
 
 const CATEGORIES = ['电子产品', '服装鞋帽', '家居用品', '运动户外', '图书文具', '其他'];
 
+// SVG Icons
+const SearchIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
+    <circle cx="9" cy="9" r="7" />
+    <path d="M14 14l4 4" />
+  </svg>
+);
+
+const FilterIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
+    <path d="M3 4h14M6 10h8M8 16h4" />
+  </svg>
+);
+
+const PackageIcon = () => (
+  <svg width="64" height="64" viewBox="0 0 64 64" fill="none" stroke="var(--text-muted)" strokeWidth="1">
+    <rect x="8" y="16" width="48" height="40" rx="4" />
+    <path d="M8 32h48M32 16v40" />
+  </svg>
+);
+
+const StarIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="var(--accent)">
+    <path d="M7 1l1.5 3 3.5.5-2.5 2.5.5 3.5L7 9l-2.5 2 .5-3.5L2.5 5l3.5-.5L7 1z" />
+  </svg>
+);
+
 export default function ItemsPage() {
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
@@ -59,112 +86,141 @@ export default function ItemsPage() {
   };
 
   return (
-    <div className="min-h-screen py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h1 className="text-4xl font-bold mb-8 bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-          物品市场
-        </h1>
+    <div className="min-h-[100dvh] py-8 bg-[var(--canvas)]">
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-[var(--text)]">
+            物品市场
+          </h1>
+          <p className="mt-2 text-[var(--text-muted)]">发现心仪之物，开启交易</p>
+        </div>
 
         {/* Filters */}
-        <form onSubmit={handleSearch} className="bg-white/80 backdrop-blur-xl p-6 rounded-2xl shadow-xl mb-8 border border-white/20">
-          <div className="grid md:grid-cols-5 gap-4">
-            <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">搜索</label>
-              <div className="relative">
+        <div className="bg-[var(--surface)] p-6 rounded-2xl border border-[var(--border)] shadow-[var(--shadow-sm)] mb-8">
+          <form onSubmit={handleSearch}>
+            <div className="grid md:grid-cols-5 gap-4">
+              {/* Search */}
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-[var(--text)] mb-2">搜索</label>
+                <div className="relative">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)]">
+                    <SearchIcon />
+                  </div>
+                  <input
+                    type="text"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="搜索物品..."
+                    className="w-full pl-12 pr-4 py-3 bg-[var(--canvas)] border border-[var(--border)] rounded-xl text-[var(--text)] placeholder:text-[var(--text-subtle)] focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-subtle)] transition-all duration-150"
+                  />
+                </div>
+              </div>
+
+              {/* Category */}
+              <div>
+                <label className="block text-sm font-medium text-[var(--text)] mb-2">分类</label>
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className="w-full px-4 py-3 bg-[var(--canvas)] border border-[var(--border)] rounded-xl text-[var(--text)] focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-subtle)] transition-all duration-150"
+                >
+                  <option value="">全部分类</option>
+                  {CATEGORIES.map((cat) => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Min Price */}
+              <div>
+                <label className="block text-sm font-medium text-[var(--text)] mb-2">最低价</label>
                 <input
-                  type="text"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="搜索物品..."
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white/50"
+                  type="number"
+                  value={minPrice}
+                  onChange={(e) => setMinPrice(e.target.value)}
+                  placeholder="0"
+                  className="w-full px-4 py-3 bg-[var(--canvas)] border border-[var(--border)] rounded-xl text-[var(--text)] placeholder:text-[var(--text-subtle)] focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-subtle)] transition-all duration-150"
                 />
-                <svg className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
+              </div>
+
+              {/* Max Price */}
+              <div>
+                <label className="block text-sm font-medium text-[var(--text)] mb-2">最高价</label>
+                <input
+                  type="number"
+                  value={maxPrice}
+                  onChange={(e) => setMaxPrice(e.target.value)}
+                  placeholder="不限"
+                  className="w-full px-4 py-3 bg-[var(--canvas)] border border-[var(--border)] rounded-xl text-[var(--text)] placeholder:text-[var(--text-subtle)] focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-subtle)] transition-all duration-150"
+                />
               </div>
             </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">分类</label>
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white/50"
+
+            <div className="mt-4">
+              <button
+                type="submit"
+                className="flex items-center gap-2 px-6 py-3 bg-[var(--accent)] text-white rounded-xl font-semibold hover:bg-[var(--accent-hover)] transition-all duration-150 active:scale-[0.98]"
               >
-                <option value="">全部分类</option>
-                {CATEGORIES.map((cat) => (
-                  <option key={cat} value={cat}>{cat}</option>
-                ))}
-              </select>
+                <SearchIcon />
+                搜索
+              </button>
             </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">最低价</label>
-              <input
-                type="number"
-                value={minPrice}
-                onChange={(e) => setMinPrice(e.target.value)}
-                placeholder="0"
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white/50"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">最高价</label>
-              <input
-                type="number"
-                value={maxPrice}
-                onChange={(e) => setMaxPrice(e.target.value)}
-                placeholder="不限"
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white/50"
-              />
-            </div>
-          </div>
-          <div className="mt-4">
-            <button
-              type="submit"
-              className="w-full md:w-auto px-8 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-semibold hover:from-indigo-700 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all"
-            >
-              搜索
-            </button>
-          </div>
-        </form>
+          </form>
+        </div>
 
         {/* Items Grid */}
         {loading ? (
-          <div className="flex justify-center items-center py-20">
-            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-600"></div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+              <div key={i} className="skeleton skeleton-card rounded-2xl" />
+            ))}
           </div>
         ) : items.length === 0 ? (
-          <div className="text-center py-20 bg-white/50 backdrop-blur-lg rounded-2xl">
-            <div className="text-6xl mb-4">🔍</div>
-            <p className="text-gray-500 text-xl">暂无物品</p>
+          <div className="text-center py-20 bg-[var(--surface)] rounded-2xl border border-[var(--border)]">
+            <PackageIcon />
+            <p className="mt-6 text-lg text-[var(--text-muted)]">暂无物品</p>
           </div>
         ) : (
-          <div className="grid md:grid-cols-4 gap-6">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 stagger-container">
             {items.map((item) => (
               <Link
                 key={item.id}
                 href={`/items/${item.id}`}
-                className="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all transform hover:-translate-y-2 overflow-hidden border border-white/20"
+                className="group bg-[var(--surface)] rounded-2xl border border-[var(--border)] shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-md)] hover:border-[var(--accent)] transition-all duration-300 overflow-hidden"
               >
-                <div className="h-48 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                <div className="h-48 bg-[var(--canvas)] flex items-center justify-center overflow-hidden">
                   {item.images[0] ? (
-                    <img src={item.images[0]} alt={item.title} className="w-full h-full object-cover" />
+                    <img
+                      src={item.images[0]}
+                      alt={item.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
                   ) : (
-                    <span className="text-gray-400 text-6xl">📦</span>
+                    <PackageIcon />
                   )}
                 </div>
-                <div className="p-5">
-                  <h3 className="font-bold text-lg truncate text-gray-900">{item.title}</h3>
-                  <p className="text-sm text-gray-500 mt-1 line-clamp-2">{item.description}</p>
-                  <p className="text-indigo-600 font-bold text-xl mt-2">{item.price} USDT</p>
-                  <div className="flex justify-between items-center mt-3 text-sm">
-                    <span className="flex items-center text-gray-600">
-                      <div className="w-6 h-6 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-full flex items-center justify-center mr-2">
-                        <span className="text-white text-xs font-bold">{item.seller.nickname[0]}</span>
+                <div className="p-5 space-y-3">
+                  <h3 className="font-semibold text-[var(--text)] truncate group-hover:text-[var(--accent)] transition-colors">
+                    {item.title}
+                  </h3>
+                  <p className="text-sm text-[var(--text-muted)] line-clamp-2">{item.description}</p>
+                  <p className="text-2xl font-bold text-[var(--accent)]">
+                    {Number(item.price).toLocaleString()}
+                    <span className="text-sm font-medium text-[var(--text-muted)] ml-1">USDT</span>
+                  </p>
+                  <div className="flex justify-between items-center pt-2 border-t border-[var(--border-subtle)]">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-full bg-[var(--accent-subtle)] flex items-center justify-center">
+                        <span className="text-xs font-semibold text-[var(--accent)]">
+                          {item.seller.nickname[0]}
+                        </span>
                       </div>
-                      {item.seller.nickname}
-                    </span>
-                    <span className="flex items-center text-yellow-500">
-                      ⭐ {item.seller.reputation}
+                      <span className="text-sm text-[var(--text-muted)]">{item.seller.nickname}</span>
+                    </div>
+                    <span className="flex items-center gap-1 text-sm font-medium text-[var(--text-muted)]">
+                      <StarIcon />
+                      {item.seller.reputation}
                     </span>
                   </div>
                 </div>

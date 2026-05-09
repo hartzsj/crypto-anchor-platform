@@ -6,6 +6,36 @@ import Link from 'next/link';
 import { usersApi } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 
+// SVG Icons
+const UserIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
+    <circle cx="10" cy="6" r="4" />
+    <path d="M3 18c0-4 3.5-7 7-7s7 3 7 7" />
+  </svg>
+);
+
+const ImageIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
+    <rect x="2" y="2" width="16" height="16" rx="2" />
+    <circle cx="7" cy="7" r="2" />
+    <path d="M18 14l-4-4-6 6" />
+  </svg>
+);
+
+const ArrowLeftIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
+    <path d="M16 10H4M10 16l-6-6 6-6" />
+  </svg>
+);
+
+const KeyIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
+    <circle cx="8" cy="8" r="5" />
+    <path d="M12 6l6 6v4h-4l-2-2" />
+    <circle cx="8" cy="8" r="2" />
+  </svg>
+);
+
 export default function EditProfilePage() {
   const { user, isAuthenticated } = useAuth();
   const router = useRouter();
@@ -29,78 +59,104 @@ export default function EditProfilePage() {
         nickname,
         avatar: avatar || undefined,
       });
-      alert('✅ 资料已更新！');
+      alert('资料已更新');
       router.push('/profile');
     } catch (err: any) {
-      alert('❌ ' + (err.response?.data?.message || '更新失败'));
+      alert(err.response?.data?.message || '更新失败');
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <div className="min-h-screen py-8">
-      <div className="max-w-3xl mx-auto px-4">
-        <h1 className="text-3xl font-bold mb-8">编辑资料</h1>
+    <div className="min-h-[100dvh] py-8 bg-[var(--canvas)]">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="mb-8">
+          <Link
+            href="/profile"
+            className="flex items-center gap-2 text-[var(--text-muted)] hover:text-[var(--text)] transition-colors mb-4"
+          >
+            <ArrowLeftIcon />
+            返回个人中心
+          </Link>
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-[var(--text)]">
+            编辑资料
+          </h1>
+          <p className="mt-2 text-[var(--text-muted)]">更新你的个人信息</p>
+        </div>
 
-        <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl p-8 border border-white/20">
+        <div className="bg-[var(--surface)] rounded-2xl border border-[var(--border)] shadow-[var(--shadow-sm)] p-8">
           <form onSubmit={handleSave} className="space-y-6">
             {/* Avatar */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">头像</label>
-              <div className="flex items-center space-x-4">
-                <div className="w-20 h-20 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-full flex items-center justify-center">
+            <div className="space-y-3">
+              <label className="block text-sm font-medium text-[var(--text)]">头像</label>
+              <div className="flex items-center gap-4">
+                <div className="w-20 h-20 rounded-full bg-[var(--accent)] flex items-center justify-center shadow-[var(--shadow-md)]">
                   {avatar ? (
                     <img src={avatar} alt="" className="w-full h-full object-cover rounded-full" />
                   ) : (
                     <span className="text-white text-2xl font-bold">{nickname?.[0]?.toUpperCase() || 'U'}</span>
                   )}
                 </div>
-                <input
-                  type="url"
-                  value={avatar}
-                  onChange={(e) => setAvatar(e.target.value)}
-                  className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  placeholder="输入头像图片URL"
-                />
+                <div className="flex-1">
+                  <div className="relative">
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)]">
+                      <ImageIcon />
+                    </div>
+                    <input
+                      type="url"
+                      value={avatar}
+                      onChange={(e) => setAvatar(e.target.value)}
+                      className="w-full pl-12 pr-4 py-3 bg-[var(--canvas)] border border-[var(--border)] rounded-xl text-[var(--text)] placeholder:text-[var(--text-subtle)] focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-subtle)] transition-all duration-150"
+                      placeholder="输入头像图片URL"
+                    />
+                  </div>
+                  <p className="text-xs text-[var(--text-subtle)] mt-2">支持 jpg、png 等图片链接</p>
+                </div>
               </div>
-              <p className="text-xs text-gray-500 mt-2">支持 jpg、png 等图片链接</p>
             </div>
 
             {/* Nickname */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">昵称</label>
-              <input
-                type="text"
-                required
-                value={nickname}
-                onChange={(e) => setNickname(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                placeholder="你的昵称"
-                minLength={2}
-                maxLength={20}
-              />
+            <div className="space-y-3">
+              <label className="block text-sm font-medium text-[var(--text)]">昵称</label>
+              <div className="relative">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)]">
+                  <UserIcon />
+                </div>
+                <input
+                  type="text"
+                  required
+                  value={nickname}
+                  onChange={(e) => setNickname(e.target.value)}
+                  className="w-full pl-12 pr-4 py-3 bg-[var(--canvas)] border border-[var(--border)] rounded-xl text-[var(--text)] placeholder:text-[var(--text-subtle)] focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-subtle)] transition-all duration-150"
+                  placeholder="你的昵称"
+                  minLength={2}
+                  maxLength={20}
+                />
+              </div>
             </div>
 
             {/* Buttons */}
-            <div className="flex space-x-4 pt-6">
+            <div className="flex gap-4 pt-6">
               <button
                 type="submit"
                 disabled={saving}
-                className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-semibold hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50"
+                className="flex-1 py-3 bg-[var(--accent)] text-white rounded-xl font-semibold hover:bg-[var(--accent-hover)] disabled:opacity-50 transition-all duration-150 active:scale-[0.98]"
               >
                 {saving ? '保存中...' : '保存'}
               </button>
               <Link
                 href="/profile"
-                className="px-6 py-3 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200"
+                className="px-6 py-3 bg-[var(--canvas)] text-[var(--text)] border border-[var(--border)] rounded-xl font-semibold hover:border-[var(--text-muted)] transition-all duration-150"
               >
                 取消
               </Link>
               <Link
                 href="/profile/edit/password"
-                className="px-6 py-3 bg-yellow-100 text-yellow-700 rounded-xl font-semibold hover:bg-yellow-200"
+                className="flex items-center gap-2 px-6 py-3 bg-yellow-100 text-yellow-700 rounded-xl font-semibold hover:bg-yellow-200 transition-all duration-150"
               >
+                <KeyIcon />
                 修改密码
               </Link>
             </div>

@@ -22,6 +22,40 @@ interface Item {
   createdAt: string;
 }
 
+// SVG Icons
+const WalletIcon = () => (
+  <svg width="48" height="48" viewBox="0 0 48 48" fill="none" stroke="var(--accent)" strokeWidth="1.5">
+    <rect x="4" y="8" width="40" height="32" rx="4" />
+    <path d="M4 16h40M32 28h8M36 24v8" />
+  </svg>
+);
+
+const ShieldIcon = () => (
+  <svg width="48" height="48" viewBox="0 0 48 48" fill="none" stroke="var(--accent)" strokeWidth="1.5">
+    <path d="M24 4L6 12v12c0 14 10 22 18 26 8-4 18-12 18-26V12L24 4z" />
+    <path d="M18 24l4 4 8-8" />
+  </svg>
+);
+
+const StarIcon = () => (
+  <svg width="48" height="48" viewBox="0 0 48 48" fill="none" stroke="var(--accent)" strokeWidth="1.5">
+    <path d="M24 4l6 12 14 2-10 10 2 14-12-6-12 6 2-14L4 18l14-2 6-12z" />
+  </svg>
+);
+
+const ArrowIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
+    <path d="M4 10h12M12 6l4 4-4 4" />
+  </svg>
+);
+
+const PackageIcon = () => (
+  <svg width="64" height="64" viewBox="0 0 64 64" fill="none" stroke="var(--text-muted)" strokeWidth="1">
+    <rect x="8" y="16" width="48" height="40" rx="4" />
+    <path d="M8 32h48M32 16v40M20 8l12 8 12-8" />
+  </svg>
+);
+
 export default function HomePage() {
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,162 +77,264 @@ export default function HomePage() {
   };
 
   return (
-    <div className="relative overflow-hidden">
-      {/* Hero Section */}
-      <div className="relative bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 text-white">
-        <div className="absolute inset-0 bg-black/10"></div>
-        <div className="absolute inset-0">
-          <div className="absolute top-20 left-10 w-72 h-72 bg-white/10 rounded-full blur-3xl"></div>
-          <div className="absolute bottom-10 right-10 w-96 h-96 bg-pink-500/20 rounded-full blur-3xl"></div>
-        </div>
-        
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-32">
-          <div className="text-center">
-            <h1 className="text-5xl md:text-7xl font-extrabold mb-6 bg-gradient-to-r from-white via-purple-100 to-pink-100 bg-clip-text text-transparent">
-              🔗 CryptoAnchor
-            </h1>
-            <p className="text-2xl md:text-3xl mb-8 opacity-95 max-w-3xl mx-auto font-light">
-              数字货币与实物锚定交易平台
-            </p>
-            <p className="text-lg mb-12 opacity-90 max-w-2xl mx-auto">
-              使用稳定币USDT交易现实物品，安全托管，信誉保障
-            </p>
-            {!isAuthenticated && (
-              <div className="flex flex-col sm:flex-row justify-center gap-4">
-                <Link
-                  href="/register"
-                  className="px-8 py-4 bg-white text-indigo-600 rounded-xl font-bold text-lg hover:bg-gray-100 transition-all shadow-2xl hover:shadow-3xl transform hover:-translate-y-1"
-                >
-                  立即注册
-                </Link>
-                <Link
-                  href="/items"
-                  className="px-8 py-4 border-2 border-white text-white rounded-xl font-bold text-lg hover:bg-white/10 transition-all transform hover:-translate-y-1"
-                >
-                  浏览物品
-                </Link>
+    <div className="min-h-[100dvh]">
+      {/* Hero Section - Split Screen Layout */}
+      <section className="relative min-h-[600px] bg-[var(--surface)] overflow-hidden">
+        {/* Decorative Elements */}
+        <div className="absolute top-20 right-20 w-64 h-64 bg-[var(--accent-subtle)] rounded-full blur-[80px] opacity-50" />
+        <div className="absolute bottom-20 left-20 w-48 h-48 bg-[var(--accent-subtle)] rounded-full blur-[60px] opacity-30" />
+
+        {/* Grid Layout */}
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32">
+          <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+            {/* Left: Content */}
+            <div className="space-y-8 fade-in">
+              <div className="space-y-4">
+                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-[var(--text)] leading-tight">
+                  数字货币与实物
+                  <span className="block text-[var(--accent)]">锚定交易平台</span>
+                </h1>
+                <p className="text-lg sm:text-xl text-[var(--text-muted)] max-w-lg leading-relaxed">
+                  使用稳定币 USDT 交易现实物品，安全托管，信誉保障
+                </p>
               </div>
-            )}
-            {isAuthenticated && (
-              <Link
-                href="/items/create"
-                className="inline-block px-8 py-4 bg-white text-indigo-600 rounded-xl font-bold text-lg hover:bg-gray-100 transition-all shadow-2xl transform hover:-translate-y-1"
-              >
-                发布物品
-              </Link>
-            )}
-          </div>
-        </div>
-      </div>
 
-      {/* Features Section */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-        <h2 className="text-4xl font-bold text-center mb-16 bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-          平台特色
-        </h2>
-        <div className="grid md:grid-cols-3 gap-8">
-          <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-2 border border-white/20">
-            <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg">
-              <span className="text-white text-3xl">💰</span>
-            </div>
-            <h3 className="text-2xl font-bold mb-4 text-gray-900">USDT 交易</h3>
-            <p className="text-gray-600 leading-relaxed">
-              使用稳定币 USDT 进行交易，避免加密货币价格波动风险
-            </p>
-          </div>
-          <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-2 border border-white/20">
-            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg">
-              <span className="text-white text-3xl">🔒</span>
-            </div>
-            <h3 className="text-2xl font-bold mb-4 text-gray-900">资金托管</h3>
-            <p className="text-gray-600 leading-relaxed">
-              买家付款后资金被平台托管，确认收货后自动释放给卖家
-            </p>
-          </div>
-          <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-2 border border-white/20">
-            <div className="w-16 h-16 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg">
-              <span className="text-white text-3xl">⭐</span>
-            </div>
-            <h3 className="text-2xl font-bold mb-4 text-gray-900">信誉系统</h3>
-            <p className="text-gray-600 leading-relaxed">
-              买卖双方互评累积信誉分，保障交易安全可信
-            </p>
-          </div>
-        </div>
-      </div>
+              <div className="flex flex-col sm:flex-row gap-4">
+                {!isAuthenticated ? (
+                  <>
+                    <Link
+                      href="/register"
+                      className="px-8 py-4 bg-[var(--accent)] text-white rounded-xl font-semibold hover:bg-[var(--accent-hover)] transition-all duration-150 active:scale-[0.98] shadow-[var(--shadow-md)]"
+                    >
+                      立即注册
+                    </Link>
+                    <Link
+                      href="/items"
+                      className="px-8 py-4 bg-[var(--surface)] border border-[var(--border)] text-[var(--text)] rounded-xl font-semibold hover:border-[var(--text-muted)] transition-all duration-150"
+                    >
+                      浏览物品
+                      <ArrowIcon />
+                    </Link>
+                  </>
+                ) : (
+                  <Link
+                    href="/items/create"
+                    className="px-8 py-4 bg-[var(--accent)] text-white rounded-xl font-semibold hover:bg-[var(--accent-hover)] transition-all duration-150 active:scale-[0.98] shadow-[var(--shadow-md)]"
+                  >
+                    发布物品
+                  </Link>
+                )}
+              </div>
 
-      {/* Latest Items */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-        <div className="flex justify-between items-center mb-12">
-          <h2 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-            最新物品
-          </h2>
-          <Link href="/items" className="text-indigo-600 hover:text-indigo-700 font-semibold text-lg">
-            查看全部 →
-          </Link>
-        </div>
-
-        {loading ? (
-          <div className="flex justify-center items-center py-20">
-            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-600"></div>
-          </div>
-        ) : items.length === 0 ? (
-          <div className="text-center py-20 bg-white/50 backdrop-blur-lg rounded-2xl">
-            <div className="text-6xl mb-4">📦</div>
-            <p className="text-gray-500 text-xl">暂无物品，成为第一个发布者吧！</p>
-          </div>
-        ) : (
-          <div className="grid md:grid-cols-4 gap-6">
-            {items.map((item) => (
-              <Link
-                key={item.id}
-                href={`/items/${item.id}`}
-                className="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all transform hover:-translate-y-2 overflow-hidden border border-white/20"
-              >
-                <div className="h-48 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-                  {item.images[0] ? (
-                    <img src={item.images[0]} alt={item.title} className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="text-gray-400 text-6xl">📦</span>
-                  )}
+              {/* Stats */}
+              <div className="flex gap-8 pt-4">
+                <div className="space-y-1">
+                  <p className="text-3xl font-bold text-[var(--text)]">100+</p>
+                  <p className="text-sm text-[var(--text-muted)]">活跃用户</p>
                 </div>
-                <div className="p-5">
-                  <h3 className="font-bold text-lg truncate text-gray-900">{item.title}</h3>
-                  <p className="text-indigo-600 font-bold text-xl mt-2">{item.price} USDT</p>
-                  <div className="flex justify-between items-center mt-3 text-sm text-gray-500">
-                    <span className="flex items-center">
-                      <div className="w-6 h-6 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-full flex items-center justify-center mr-2">
-                        <span className="text-white text-xs font-bold">{item.seller.nickname[0]}</span>
-                      </div>
-                      {item.seller.nickname}
-                    </span>
-                    <span className="flex items-center">
-                      <span className="text-yellow-500 mr-1">⭐</span>
-                      {item.seller.reputation}
-                    </span>
+                <div className="space-y-1">
+                  <p className="text-3xl font-bold text-[var(--text)]">50+</p>
+                  <p className="text-sm text-[var(--text-muted)]">在售物品</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-3xl font-bold text-[var(--text)]">99%</p>
+                  <p className="text-sm text-[var(--text-muted)]">交易成功</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Right: Visual Element */}
+            <div className="relative hidden lg:block">
+              <div className="relative w-full h-[500px] bg-gradient-to-br from-[var(--surface-hover)] to-[var(--accent-subtle)] rounded-3xl border border-[var(--border)] shadow-[var(--shadow-lg)] overflow-hidden">
+                {/* Abstract Visual */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="relative">
+                    <div className="w-32 h-32 bg-[var(--accent)] rounded-2xl transform rotate-12 shadow-[var(--shadow-lg)]" />
+                    <div className="absolute -top-4 -left-4 w-24 h-24 bg-[var(--accent-light)] rounded-xl opacity-60" />
+                    <div className="absolute top-8 left-8 w-16 h-16 bg-white rounded-lg shadow-[var(--shadow-md)]" />
                   </div>
                 </div>
-              </Link>
-            ))}
+
+                {/* Floating Cards */}
+                <div className="absolute top-10 right-10 w-20 h-20 bg-[var(--surface)] rounded-xl shadow-[var(--shadow-md)] flex items-center justify-center">
+                  <WalletIcon />
+                </div>
+                <div className="absolute bottom-20 left-10 w-16 h-16 bg-[var(--surface)] rounded-xl shadow-[var(--shadow-md)] flex items-center justify-center">
+                  <ShieldIcon />
+                </div>
+              </div>
+            </div>
           </div>
-        )}
-      </div>
+        </div>
+      </section>
+
+      {/* Features Section - Bento Grid */}
+      <section className="py-20 lg:py-32 bg-[var(--canvas)]">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-[var(--text)]">
+              平台特色
+            </h2>
+            <p className="mt-4 text-lg text-[var(--text-muted)]">
+              安全、透明、可信的数字货币交易体验
+            </p>
+          </div>
+
+          {/* Bento Grid - Asymmetric Layout */}
+          <div className="grid md:grid-cols-3 gap-6 stagger-container">
+            {/* Large Card */}
+            <div className="md:col-span-2 p-8 bg-[var(--surface)] rounded-2xl border border-[var(--border)] shadow-[var(--shadow-md)] space-y-4">
+              <WalletIcon />
+              <h3 className="text-2xl font-bold text-[var(--text)]">USDT 交易</h3>
+              <p className="text-[var(--text-muted)] leading-relaxed max-w-md">
+                使用稳定币 USDT 进行交易，避免加密货币价格波动风险。支持 TRON 链上充值，自动入账。
+              </p>
+              <div className="flex gap-4 pt-4">
+                <span className="px-3 py-1 bg-[var(--accent-subtle)] text-[var(--accent)] rounded-full text-sm font-medium">TRC-20</span>
+                <span className="px-3 py-1 bg-[var(--surface-hover)] text-[var(--text-muted)] rounded-full text-sm font-medium">自动充值</span>
+              </div>
+            </div>
+
+            {/* Small Card */}
+            <div className="p-8 bg-[var(--surface)] rounded-2xl border border-[var(--border)] shadow-[var(--shadow-md)] space-y-4">
+              <ShieldIcon />
+              <h3 className="text-xl font-bold text-[var(--text)]">资金托管</h3>
+              <p className="text-[var(--text-muted)] leading-relaxed">
+                买家付款后资金被平台托管，确认收货后自动释放给卖家。
+              </p>
+            </div>
+
+            {/* Small Card */}
+            <div className="p-8 bg-[var(--surface)] rounded-2xl border border-[var(--border)] shadow-[var(--shadow-md)] space-y-4">
+              <StarIcon />
+              <h3 className="text-xl font-bold text-[var(--text)]">信誉系统</h3>
+              <p className="text-[var(--text-muted)] leading-relaxed">
+                买卖双方互评累积信誉分，保障交易安全可信。
+              </p>
+            </div>
+
+            {/* Large Card */}
+            <div className="md:col-span-2 p-8 bg-gradient-to-br from-[var(--accent)] to-[var(--accent-hover)] rounded-2xl shadow-[var(--shadow-lg)] space-y-4">
+              <div className="flex items-center gap-4">
+                <svg width="48" height="48" viewBox="0 0 48 48" fill="none" stroke="white" strokeWidth="1.5">
+                  <path d="M24 12v24M12 24h24M8 8l32 32M8 40l32-32" />
+                </svg>
+                <div>
+                  <h3 className="text-2xl font-bold text-white">争议仲裁</h3>
+                  <p className="text-white/80 leading-relaxed max-w-md">
+                    遇到交易纠纷？平台提供专业的争议仲裁服务，管理员介入处理，保障双方权益。
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Latest Items Section */}
+      <section className="py-20 lg:py-32 bg-[var(--surface)]">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center mb-12">
+            <div>
+              <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-[var(--text)]">
+                最新物品
+              </h2>
+              <p className="mt-2 text-[var(--text-muted)]">发现心仪之物</p>
+            </div>
+            <Link href="/items" className="flex items-center gap-2 text-[var(--accent)] hover:text-[var(--accent-hover)] font-medium transition-colors">
+              查看全部
+              <ArrowIcon />
+            </Link>
+          </div>
+
+          {loading ? (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="skeleton skeleton-card rounded-2xl" />
+              ))}
+            </div>
+          ) : items.length === 0 ? (
+            <div className="text-center py-20 bg-[var(--canvas)] rounded-2xl border border-[var(--border)]">
+              <PackageIcon />
+              <p className="mt-6 text-lg text-[var(--text-muted)]">暂无物品，成为第一个发布者</p>
+              {isAuthenticated && (
+                <Link
+                  href="/items/create"
+                  className="mt-6 inline-block px-6 py-3 bg-[var(--accent)] text-white rounded-lg font-medium hover:bg-[var(--accent-hover)] transition-colors"
+                >
+                  发布物品
+                </Link>
+              )}
+            </div>
+          ) : (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 stagger-container">
+              {items.map((item) => (
+                <Link
+                  key={item.id}
+                  href={`/items/${item.id}`}
+                  className="group bg-[var(--canvas)] rounded-2xl border border-[var(--border)] shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-md)] hover:border-[var(--accent)] transition-all duration-300 overflow-hidden"
+                >
+                  <div className="h-48 bg-[var(--surface-hover)] flex items-center justify-center overflow-hidden">
+                    {item.images[0] ? (
+                      <img
+                        src={item.images[0]}
+                        alt={item.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                    ) : (
+                      <PackageIcon />
+                    )}
+                  </div>
+                  <div className="p-5 space-y-3">
+                    <h3 className="font-semibold text-[var(--text)] truncate group-hover:text-[var(--accent)] transition-colors">
+                      {item.title}
+                    </h3>
+                    <p className="text-2xl font-bold text-[var(--accent)]">
+                      {Number(item.price).toLocaleString()} <span className="text-sm font-medium text-[var(--text-muted)]">USDT</span>
+                    </p>
+                    <div className="flex justify-between items-center pt-2 border-t border-[var(--border-subtle)]">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-[var(--accent-subtle)] flex items-center justify-center">
+                          <span className="text-xs font-semibold text-[var(--accent)]">
+                            {item.seller.nickname[0]}
+                          </span>
+                        </div>
+                        <span className="text-sm text-[var(--text-muted)]">{item.seller.nickname}</span>
+                      </div>
+                      <span className="flex items-center gap-1 text-sm font-medium text-[var(--text-muted)]">
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="var(--accent)">
+                          <path d="M7 1l1.5 3 3.5.5-2.5 2.5.5 3.5L7 9l-2.5 2 .5-3.5L2.5 5l3.5-.5L7 1z" />
+                        </svg>
+                        {item.seller.reputation}
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
 
       {/* CTA Section */}
-      <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-20">
-        <div className="max-w-4xl mx-auto text-center px-4">
-          <h2 className="text-4xl font-bold mb-6">准备好开始了吗？</h2>
-          <p className="text-xl mb-8 opacity-90">
+      <section className="py-20 bg-[var(--accent)]">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-6">
+            准备好开始了吗？
+          </h2>
+          <p className="text-lg text-white/80 mb-8">
             注册账户，发布你的第一个物品，或者浏览市场找到心仪之物
           </p>
-          <Link
-            href="/register"
-            className="inline-block px-10 py-4 bg-white text-indigo-600 rounded-xl font-bold text-lg hover:bg-gray-100 transition-all shadow-2xl transform hover:-translate-y-1"
-          >
-            免费注册
-          </Link>
+          {!isAuthenticated && (
+            <Link
+              href="/register"
+              className="inline-block px-10 py-4 bg-white text-[var(--accent)] rounded-xl font-semibold hover:bg-white/90 transition-all duration-150 shadow-lg"
+            >
+              免费注册
+            </Link>
+          )}
         </div>
-      </div>
+      </section>
     </div>
   );
 }
