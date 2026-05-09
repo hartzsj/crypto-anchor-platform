@@ -10,11 +10,14 @@
 - ⭐ **信誉系统** - 买卖双方互评，累积信誉分
 - 🚚 **物流追踪** - 卖家发货后支持物流单号追踪
 - ⏰ **自动确认** - 7天未确认收货自动完成订单
+- 💎 **TRON 充值** - 支持 TRON 链上 USDT (TRC-20) 自动充值
+- 👤 **用户系统** - 个人中心、资料编辑、密码修改、公开主页
+- 🛡️ **管理后台** - 数据统计、订单管理、用户管理、争议处理
 
 ## 🏗️ 技术栈
 
 ### 前端
-- **Next.js 15** - React 框架
+- **Next.js 16** - React 框架 (App Router)
 - **TailwindCSS** - 样式系统
 - **TypeScript** - 类型安全
 - **Axios** - HTTP 客户端
@@ -25,6 +28,12 @@
 - **PostgreSQL** - 数据库
 - **JWT** - 身份认证
 - **bcryptjs** - 密码加密
+- **TronWeb** - TRON 链交互
+- **@nestjs/throttler** - API 限流
+
+### 区块链
+- **TRON Network** - TRC-20 USDT 充值监听
+- **TronGrid API** - 链上数据查询
 
 ### 部署
 - **Docker** - 容器化
@@ -70,7 +79,7 @@ npx prisma migrate dev
 npm run start:dev
 ```
 
-后端将运行在 `http://localhost:3001`
+后端将运行在 `http://localhost:13001`
 
 ### 前端设置
 
@@ -84,7 +93,7 @@ npm install
 npm run dev
 ```
 
-前端将运行在 `http://localhost:3000`
+前端将运行在 `http://localhost:13002`
 
 ## 📁 项目结构
 
@@ -93,11 +102,13 @@ crypto-anchor-platform/
 ├── backend/                # NestJS 后端
 │   ├── src/
 │   │   ├── auth/          # 认证模块（登录/注册/JWT）
-│   │   ├── users/         # 用户模块
+│   │   ├── users/         # 用户模块（资料/密码/公开主页）
 │   │   ├── wallets/       # 钱包模块（充值/提现/记账）
 │   │   ├── items/         # 物品模块（发布/审核/搜索）
 │   │   ├── orders/        # 订单模块（下单/托管/发货/确认）
 │   │   ├── reviews/       # 评价模块（互评/信誉）
+│   │   ├── tron/          # TRON 充值监听模块
+│   │   ├── admin/         # 管理后台模块
 │   │   ├── prisma/        # Prisma 服务
 │   │   └── app.module.ts
 │   ├── prisma/
@@ -110,12 +121,17 @@ crypto-anchor-platform/
 │   │   ├── register/     # 注册页
 │   │   ├── items/        # 物品相关页面
 │   │   ├── orders/       # 订单页面
-│   │   └── wallet/       # 钱包页面
+│   │   ├── wallet/       # 钱包页面（含 TRON 充值）
+│   │   ├── profile/      # 个人中心
+│   │   ├── user/[id]/    # 用户公开主页
+│   │   └── admin/        # 管理后台
 │   ├── components/       # 组件
 │   ├── contexts/         # React Context
 │   └── lib/
-│       └── api.ts        # API 服务层
+│   │       └── api.ts        # API 服务层
+├── contracts/            # 智能合约（TRON）
 ├── docker-compose.yml    # Docker 配置
+├── LICENSE               # 许可证
 └── README.md
 ```
 
@@ -131,10 +147,16 @@ crypto-anchor-platform/
 - `POST /api/wallets/withdraw` - 提现
 - `GET /api/wallets/transactions` - 交易记录
 
+### TRON 充值
+- `GET /api/tron/deposit-address` - 获取充值地址
+- `POST /api/tron/deposit-address` - 设置充值地址
+- `GET /api/tron/deposit-balance` - 查询链上余额
+
 ### 物品
 - `GET /api/items` - 获取物品列表
 - `GET /api/items/:id` - 获取物品详情
 - `POST /api/items` - 发布物品
+- `GET /api/items/my` - 我的物品
 - `POST /api/items/:id/approve` - 审核通过（管理员）
 - `POST /api/items/:id/reject` - 审核拒绝（管理员）
 
@@ -145,11 +167,30 @@ crypto-anchor-platform/
 - `POST /api/orders/:id/confirm` - 确认收货
 - `POST /api/orders/:id/cancel` - 取消订单
 - `POST /api/orders/:id/dispute` - 发起争议
+- `POST /api/orders/:id/resolve` - 解决争议（管理员）
 - `GET /api/orders/my/buy` - 我的购买
 - `GET /api/orders/my/sell` - 我的销售
 
+### 用户
+- `GET /api/users/me` - 获取当前用户信息
+- `PUT /api/users/me` - 更新资料
+- `POST /api/users/me/password` - 修改密码
+- `GET /api/users/:id/public` - 获取用户公开信息
+- `GET /api/users/:id/items` - 获取用户物品
+- `GET /api/users/:id/reviews` - 获取用户评价
+
 ### 评价
 - `POST /api/reviews` - 创建评价
+
+### 管理后台
+- `GET /api/admin/stats` - 平台统计
+- `GET /api/admin/orders` - 所有订单
+- `GET /api/admin/orders/disputed` - 争议订单
+- `GET /api/admin/users` - 所有用户
+- `PUT /api/admin/users/:id/role` - 设置用户角色
+- `PUT /api/admin/users/:id/reputation` - 调整信誉分
+- `GET /api/admin/items/stats` - 物品统计
+- `GET /api/admin/transactions` - 交易记录
 
 ## 🔄 交易流程
 
@@ -164,19 +205,35 @@ crypto-anchor-platform/
 注：7天未确认收货将自动完成订单
 ```
 
+## 💎 TRON 充值流程
+
+```
+1. 用户在钱包页面获取/设置专属 TRON 充值地址
+2. 用户向该地址转账 USDT (TRC-20)
+3. 后端定时扫描链上交易（每60秒）
+4. 检测到新交易后自动入账到用户钱包
+5. 用户可在交易记录中查看充值详情
+```
+
+详见 [TRON_SETUP.md](./TRON_SETUP.md)
+
 ## 📊 数据库模型
 
-- **User** - 用户（邮箱、用户名、密码、角色、信誉分）
+- **User** - 用户（邮箱、用户名、密码、角色、信誉分、头像、简介）
 - **Wallet** - 钱包（USDT余额、冻结余额）
 - **Transaction** - 交易记录（充值、提现、订单支付/放款/退款）
 - **Item** - 物品（标题、描述、图片、价格、分类、状态）
 - **Order** - 订单（买家、卖家、价格、状态、物流信息）
 - **Review** - 评价（订单、评分、评论）
+- **TronDepositAddress** - TRON 充值地址绑定
 
 ## 🔐 安全特性
 
 - 密码使用 bcrypt 加密存储
-- JWT 令牌认证
+- JWT 令牌认证（7天有效期）
+- 角色权限控制（USER/ADMIN）
+- API 请求限流（每分钟100次）
+- class-validator 输入验证
 - 资金托管机制
 - 信誉评分系统
 - 争议仲裁功能
@@ -217,16 +274,25 @@ npm run start
 
 ### 后端 (.env)
 ```env
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/crypto_anchor
+# Database
+DATABASE_URL=postgresql://postgres@localhost:5432/crypto_anchor
+
+# JWT
 JWT_SECRET=your-super-secret-jwt-key
 JWT_EXPIRES_IN=7d
-PORT=3001
-FRONTEND_URL=http://localhost:3000
+
+# App
+PORT=13001
+FRONTEND_URL=http://localhost:13002
+
+# TRON (可选，用于真实环境)
+TRON_NETWORK=shasta  # 或 mainnet
+TRON_GRID_API_KEY=your-api-key
 ```
 
 ### 前端 (.env)
 ```env
-NEXT_PUBLIC_API_URL=http://localhost:3001/api
+NEXT_PUBLIC_API_URL=http://localhost:13001/api
 ```
 
 ## 🎯 未来计划
@@ -239,6 +305,29 @@ NEXT_PUBLIC_API_URL=http://localhost:3001/api
 - [ ] 移动端 App
 - [ ] K线图表和行情数据
 
+## 👥 用户角色
+
+- **USER** - 普通用户，可以发布物品、交易、评价
+- **ADMIN** - 管理员，可以审核物品、处理争议、管理用户、查看统计数据
+
 ## 📄 许可证
 
-MIT
+**非商业使用免费，商业使用需授权**
+
+- ✅ 个人学习与研究
+- ✅ 教育用途
+- ✅ 开源项目贡献
+- ✅ 学术研究
+- ✅ 个人非营利项目
+- ❌ 商业产品/服务
+- ❌ 企业内部使用
+
+商业授权请联系：zhoushuijie@gmail.com
+
+详见 [LICENSE](./LICENSE)
+
+---
+
+**Author:** hartzsj
+
+**Repository:** https://github.com/hartzsj/crypto-anchor-platform
