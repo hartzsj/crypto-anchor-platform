@@ -12,6 +12,7 @@ import { ReviewsModule } from './reviews/reviews.module';
 import { TronModule } from './tron/tron.module';
 import { AdminModule } from './admin/admin.module';
 import { BlockchainModule } from './blockchain/blockchain.module';
+import { MarketModule } from './market/market.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -36,6 +37,7 @@ import { AppService } from './app.service';
     TronModule, // TRON充值监听模块
     AdminModule, // 管理后台模块
     BlockchainModule, // 多链区块链托管模块
+    MarketModule, // 行情数据模块
   ],
   controllers: [AppController],
   providers: [AppService],

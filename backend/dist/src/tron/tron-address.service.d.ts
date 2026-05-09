@@ -5,8 +5,7 @@ export declare class TronAddressService {
     private readonly logger;
     private prisma;
     constructor(configService: ConfigService, prisma: PrismaService);
-    generateDepositAddress(userId: string): Promise<string>;
-    private createOrGetAddress;
+    getDepositAddress(userId: string): Promise<string | null>;
     setDepositAddress(userId: string, address: string): Promise<void>;
     private isValidTronAddress;
 }

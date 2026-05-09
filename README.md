@@ -10,7 +10,9 @@
 - ⭐ **信誉系统** - 买卖双方互评，累积信誉分
 - 🚚 **物流追踪** - 卖家发货后支持物流单号追踪
 - ⏰ **自动确认** - 7天未确认收货自动完成订单
-- 💎 **TRON 充值** - 支持 TRON 链上 USDT (TRC-20) 自动充值
+- 💎 **多链充值** - 支持 TRON (TRC-20) 和 BSC (BEP-20) 链上 USDT 充值
+- 📊 **行情数据** - 实时价格查询、历史价格、K线数据 (CoinGecko API)
+- 💱 **多币种支持** - 支持 USDT、TRX、BNB、ETH 等多种代币
 - 👤 **用户系统** - 个人中心、资料编辑、密码修改、公开主页
 - 🛡️ **管理后台** - 数据统计、订单管理、用户管理、争议处理
 - 🎨 **多主题支持** - 8种配色方案，管理员可在后台切换平台外观
@@ -35,8 +37,11 @@
 - **@nestjs/throttler** - API 限流
 
 ### 区块链
-- **TRON Network** - TRC-20 USDT 充值监听
-- **TronGrid API** - 链上数据查询
+- **TRON Network** - TRC-20 USDT/TRX 充值监听
+- **BSC Network** - BEP-20 USDT/BNB/ETH 充值监听
+- **CoinGecko API** - 行情数据、历史价格
+- **TronGrid API** - TRON 链上数据查询
+- **BscScan API** - BSC 链上数据查询
 
 ### 部署
 - **Docker** - 容器化
@@ -111,6 +116,8 @@ crypto-anchor-platform/
 │   │   ├── orders/        # 订单模块（下单/托管/发货/确认）
 │   │   ├── reviews/       # 评价模块（互评/信誉）
 │   │   ├── tron/          # TRON 充值监听模块
+│   │   ├── blockchain/    # 多链区块链模块（TRON/BSC托管、充值监听）
+│   │   ├── market/        # 行情数据模块（价格/K线/历史）
 │   │   ├── admin/         # 管理后台模块
 │   │   ├── prisma/        # Prisma 服务
 │   │   └── app.module.ts
@@ -154,6 +161,22 @@ crypto-anchor-platform/
 - `GET /api/tron/deposit-address` - 获取充值地址
 - `POST /api/tron/deposit-address` - 设置充值地址
 - `GET /api/tron/deposit-balance` - 查询链上余额
+
+### 多链钱包
+- `GET /api/blockchain/networks` - 获取支持的区块链网络
+- `GET /api/blockchain/networks/:network/tokens` - 获取网络代币列表
+- `GET /api/blockchain/wallet-address/:network` - 获取用户钱包地址
+- `POST /api/blockchain/wallet-address` - 设置钱包地址
+- `GET /api/blockchain/deposit-balance/:network` - 查询链上余额
+- `GET /api/blockchain/balance` - 查询指定代币余额
+- `POST /api/blockchain/validate-address` - 验证地址格式
+- `GET /api/blockchain/escrow/status` - 查询托管订单状态
+
+### 行情数据
+- `GET /api/market/prices?symbols=BTC,ETH,USDT` - 获取实时价格
+- `GET /api/market/history?symbol=BTC&days=30` - 获取历史价格
+- `GET /api/market/klines?symbol=BTC&interval=1d&limit=100` - 获取K线数据
+- `GET /api/market/all` - 获取所有代币价格
 
 ### 物品
 - `GET /api/items` - 获取物品列表
@@ -322,13 +345,13 @@ NEXT_PUBLIC_API_URL=http://localhost:13001/api
 
 ## 🎯 未来计划
 
-- [ ] 链上智能合约托管
-- [ ] 多币种支持（BTC、ETH）
+- [x] 链上智能合约托管（TRON + BSC 测试网）
+- [x] 多币种支持（USDT、TRX、BNB、ETH）
 - [ ] 第三方验货服务
 - [ ] 邮件/短信通知
 - [ ] KYC 认证
 - [ ] 移动端 App
-- [ ] K线图表和行情数据
+- [x] K线图表和行情数据（CoinGecko API）
 
 ## 👥 用户角色
 

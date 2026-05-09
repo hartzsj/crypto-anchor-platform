@@ -38,6 +38,9 @@ export declare class AdminController {
             price: import("@prisma/client/runtime/library").Decimal;
             status: import("@prisma/client").$Enums.OrderStatus;
             itemId: string;
+            networkId: string | null;
+            tokenId: string | null;
+            isOnchain: boolean;
             logisticsCompany: string | null;
             trackingNumber: string | null;
             paidAt: Date | null;
@@ -73,6 +76,9 @@ export declare class AdminController {
         price: import("@prisma/client/runtime/library").Decimal;
         status: import("@prisma/client").$Enums.OrderStatus;
         itemId: string;
+        networkId: string | null;
+        tokenId: string | null;
+        isOnchain: boolean;
         logisticsCompany: string | null;
         trackingNumber: string | null;
         paidAt: Date | null;
@@ -99,8 +105,13 @@ export declare class AdminController {
     getAllUsers(skip?: number, take?: number): Promise<{
         users: {
             wallet: {
-                balance: import("@prisma/client/runtime/library").Decimal;
-                frozenBalance: import("@prisma/client/runtime/library").Decimal;
+                balances: {
+                    token: {
+                        symbol: string;
+                    };
+                    balance: import("@prisma/client/runtime/library").Decimal;
+                    frozenBalance: import("@prisma/client/runtime/library").Decimal;
+                }[];
             } | null;
             id: string;
             email: string;
@@ -136,10 +147,12 @@ export declare class AdminController {
         createdAt: Date;
         orderId: string | null;
         description: string | null;
+        tokenId: string | null;
         walletId: string;
         type: import("@prisma/client").$Enums.TransactionType;
         amount: import("@prisma/client/runtime/library").Decimal;
         balanceBefore: import("@prisma/client/runtime/library").Decimal;
         balanceAfter: import("@prisma/client/runtime/library").Decimal;
+        txHash: string | null;
     })[]>;
 }

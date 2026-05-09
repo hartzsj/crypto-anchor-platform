@@ -33,23 +33,27 @@ let TronMonitorService = TronMonitorService_1 = class TronMonitorService {
     async scanDeposits() {
         this.logger.log('开始扫描USDT充值...');
         try {
-            const wallets = await this.prisma.wallet.findMany({
-                where: {
-                    depositAddress: { not: null },
-                },
+            const tronNetwork = await this.prisma.blockchainNetwork.findFirst({
+                where: { name: 'TRON', isActive: true },
             });
-            for (const wallet of wallets) {
-                if (!wallet.depositAddress)
-                    continue;
-                if (!this.isValidTronAddress(wallet.depositAddress)) {
-                    this.logger.debug(`跳过无效地址: ${wallet.depositAddress}`);
+            if (!tronNetwork) {
+                this.logger.warn('TRON network not found');
+                return;
+            }
+            const walletAddresses = await this.prisma.walletAddress.findMany({
+                where: { networkId: tronNetwork.id },
+                include: { user: true },
+            });
+            for (const wa of walletAddresses) {
+                if (!this.isValidTronAddress(wa.address)) {
+                    this.logger.debug(`跳过无效地址: ${wa.address}`);
                     continue;
                 }
                 try {
-                    await this.checkAddressDeposit(wallet);
+                    await this.checkAddressDeposit(wa.userId, wa.address);
                 }
                 catch (error) {
-                    this.logger.error(`扫描地址 ${wallet.depositAddress} 失败:`, error);
+                    this.logger.error(`扫描地址 ${wa.address} 失败:`, error);
                 }
             }
         }
@@ -60,8 +64,7 @@ let TronMonitorService = TronMonitorService_1 = class TronMonitorService {
     isValidTronAddress(address) {
         return /^T[A-Za-z1-9]{33}$/.test(address);
     }
-    async checkAddressDeposit(wallet) {
-        const address = wallet.depositAddress;
+    async checkAddressDeposit(userId, address) {
         const url = `${TRONGRID_API}/v1/accounts/${address}/transactions/trc20?limit=20&contract_address=${USDT_CONTRACT_ADDRESS}`;
         const response = await fetch(url, {
             headers: {
@@ -77,49 +80,25 @@ let TronMonitorService = TronMonitorService_1 = class TronMonitorService {
             if (tx.to !== address)
                 continue;
             const existingTx = await this.prisma.transaction.findFirst({
-                where: {
-                    description: `链上充值: ${tx.transaction_id}`,
-                },
+                where: { txHash: tx.transaction_id },
             });
-            if (existingTx) {
+            if (existingTx)
                 continue;
-            }
             const amount = parseFloat(tx.value) / 1e6;
             if (amount <= 0)
                 continue;
-            await this.processDeposit(wallet.userId, amount, tx.transaction_id);
+            await this.processDeposit(userId, amount, tx.transaction_id);
         }
     }
     async processDeposit(userId, amount, txHash) {
         this.logger.log(`用户 ${userId} 充值 ${amount} USDT, tx: ${txHash}`);
-        const wallet = await this.prisma.wallet.findUnique({
-            where: { userId },
-        });
-        if (!wallet) {
-            this.logger.error(`用户钱包不存在: ${userId}`);
-            return;
+        try {
+            await this.walletsService.deposit(userId, amount, 'TRON', 'USDT', txHash);
+            this.logger.log(`✅ 用户 ${userId} 充值成功: ${amount} USDT`);
         }
-        const balanceBefore = Number(wallet.balance);
-        const balanceAfter = balanceBefore + amount;
-        await this.prisma.$transaction(async (tx) => {
-            await tx.wallet.update({
-                where: { userId },
-                data: {
-                    balance: balanceAfter,
-                },
-            });
-            await tx.transaction.create({
-                data: {
-                    walletId: wallet.id,
-                    type: 'DEPOSIT',
-                    amount: amount,
-                    balanceBefore: balanceBefore,
-                    balanceAfter: balanceAfter,
-                    description: `链上充值: ${txHash}`,
-                },
-            });
-        });
-        this.logger.log(`✅ 用户 ${userId} 充值成功: ${amount} USDT`);
+        catch (error) {
+            this.logger.error(`充值入账失败:`, error);
+        }
     }
     async getAddressBalance(address) {
         if (!this.isValidTronAddress(address)) {

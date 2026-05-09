@@ -15,6 +15,9 @@ export declare class OrdersController {
         price: import("@prisma/client/runtime/library").Decimal;
         status: import("@prisma/client").$Enums.OrderStatus;
         itemId: string;
+        networkId: string | null;
+        tokenId: string | null;
+        isOnchain: boolean;
         logisticsCompany: string | null;
         trackingNumber: string | null;
         paidAt: Date | null;
@@ -32,6 +35,9 @@ export declare class OrdersController {
         price: import("@prisma/client/runtime/library").Decimal;
         status: import("@prisma/client").$Enums.OrderStatus;
         itemId: string;
+        networkId: string | null;
+        tokenId: string | null;
+        isOnchain: boolean;
         logisticsCompany: string | null;
         trackingNumber: string | null;
         paidAt: Date | null;
@@ -49,6 +55,9 @@ export declare class OrdersController {
         price: import("@prisma/client/runtime/library").Decimal;
         status: import("@prisma/client").$Enums.OrderStatus;
         itemId: string;
+        networkId: string | null;
+        tokenId: string | null;
+        isOnchain: boolean;
         logisticsCompany: string | null;
         trackingNumber: string | null;
         paidAt: Date | null;
@@ -66,6 +75,9 @@ export declare class OrdersController {
         price: import("@prisma/client/runtime/library").Decimal;
         status: import("@prisma/client").$Enums.OrderStatus;
         itemId: string;
+        networkId: string | null;
+        tokenId: string | null;
+        isOnchain: boolean;
         logisticsCompany: string | null;
         trackingNumber: string | null;
         paidAt: Date | null;
@@ -83,6 +95,9 @@ export declare class OrdersController {
         price: import("@prisma/client/runtime/library").Decimal;
         status: import("@prisma/client").$Enums.OrderStatus;
         itemId: string;
+        networkId: string | null;
+        tokenId: string | null;
+        isOnchain: boolean;
         logisticsCompany: string | null;
         trackingNumber: string | null;
         paidAt: Date | null;
@@ -100,6 +115,9 @@ export declare class OrdersController {
         price: import("@prisma/client/runtime/library").Decimal;
         status: import("@prisma/client").$Enums.OrderStatus;
         itemId: string;
+        networkId: string | null;
+        tokenId: string | null;
+        isOnchain: boolean;
         logisticsCompany: string | null;
         trackingNumber: string | null;
         paidAt: Date | null;
@@ -117,6 +135,9 @@ export declare class OrdersController {
         price: import("@prisma/client/runtime/library").Decimal;
         status: import("@prisma/client").$Enums.OrderStatus;
         itemId: string;
+        networkId: string | null;
+        tokenId: string | null;
+        isOnchain: boolean;
         logisticsCompany: string | null;
         trackingNumber: string | null;
         paidAt: Date | null;
@@ -167,6 +188,9 @@ export declare class OrdersController {
             price: import("@prisma/client/runtime/library").Decimal;
             status: import("@prisma/client").$Enums.OrderStatus;
             itemId: string;
+            networkId: string | null;
+            tokenId: string | null;
+            isOnchain: boolean;
             logisticsCompany: string | null;
             trackingNumber: string | null;
             paidAt: Date | null;
@@ -219,6 +243,9 @@ export declare class OrdersController {
             price: import("@prisma/client/runtime/library").Decimal;
             status: import("@prisma/client").$Enums.OrderStatus;
             itemId: string;
+            networkId: string | null;
+            tokenId: string | null;
+            isOnchain: boolean;
             logisticsCompany: string | null;
             trackingNumber: string | null;
             paidAt: Date | null;
@@ -275,6 +302,9 @@ export declare class OrdersController {
         price: import("@prisma/client/runtime/library").Decimal;
         status: import("@prisma/client").$Enums.OrderStatus;
         itemId: string;
+        networkId: string | null;
+        tokenId: string | null;
+        isOnchain: boolean;
         logisticsCompany: string | null;
         trackingNumber: string | null;
         paidAt: Date | null;

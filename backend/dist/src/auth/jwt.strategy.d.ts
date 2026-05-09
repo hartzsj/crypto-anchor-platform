@@ -14,9 +14,6 @@ export declare class JwtStrategy extends JwtStrategy_base {
             createdAt: Date;
             updatedAt: Date;
             userId: string;
-            balance: import("@prisma/client/runtime/library").Decimal;
-            frozenBalance: import("@prisma/client/runtime/library").Decimal;
-            depositAddress: string | null;
         } | null;
     } & {
         id: string;

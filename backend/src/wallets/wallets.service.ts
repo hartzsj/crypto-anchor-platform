@@ -9,14 +9,28 @@ export class WalletsService {
   async getOrCreateWallet(userId: string) {
     let wallet = await this.prisma.wallet.findUnique({
       where: { userId },
+      include: {
+        balances: {
+          include: {
+            token: {
+              include: { network: true },
+            },
+          },
+        },
+      },
     });
 
     if (!wallet) {
       wallet = await this.prisma.wallet.create({
-        data: {
-          userId,
-          balance: 0,
-          frozenBalance: 0,
+        data: { userId },
+        include: {
+          balances: {
+            include: {
+              token: {
+                include: { network: true },
+              },
+            },
+          },
         },
       });
     }
@@ -24,75 +38,209 @@ export class WalletsService {
     return wallet;
   }
 
-  // 查询余额
+  // 查询余额（多币种）
   async getBalance(userId: string) {
     const wallet = await this.getOrCreateWallet(userId);
+
+    // 获取所有支持的网络和代币
+    const networks = await this.prisma.blockchainNetwork.findMany({
+      where: { isActive: true },
+      include: { tokens: { where: { isActive: true } } },
+    });
+
+    // 为每个代币初始化余额（如果不存在）
+    for (const network of networks) {
+      for (const token of network.tokens) {
+        const existingBalance = wallet.balances.find(
+          (b) => b.tokenId === token.id
+        );
+
+        if (!existingBalance) {
+          await this.prisma.walletBalance.create({
+            data: {
+              walletId: wallet.id,
+              tokenId: token.id,
+              balance: 0,
+              frozenBalance: 0,
+            },
+          });
+        }
+      }
+    }
+
+    // 重新获取钱包余额
+    const updatedWallet = await this.prisma.wallet.findUnique({
+      where: { userId },
+      include: {
+        balances: {
+          include: {
+            token: {
+              include: { network: true },
+            },
+          },
+        },
+      },
+    });
+
     return {
-      balance: Number(wallet.balance),
-      frozenBalance: Number(wallet.frozenBalance),
-      total: Number(wallet.balance) + Number(wallet.frozenBalance),
+      balances: updatedWallet!.balances.map((b) => ({
+        id: b.id,
+        symbol: b.token.symbol,
+        network: b.token.network.name,
+        balance: Number(b.balance),
+        frozenBalance: Number(b.frozenBalance),
+        decimals: b.token.decimals,
+      })),
     };
   }
 
-  // 充值
-  async deposit(userId: string, amount: number, description?: string) {
+  // 获取指定代币余额
+  async getTokenBalance(userId: string, networkName: string, tokenSymbol: string) {
+    const wallet = await this.getOrCreateWallet(userId);
+
+    const network = await this.prisma.blockchainNetwork.findFirst({
+      where: { name: networkName, isActive: true },
+    });
+
+    if (!network) {
+      throw new BadRequestException(`网络 ${networkName} 不存在或未激活`);
+    }
+
+    const token = await this.prisma.token.findFirst({
+      where: {
+        networkId: network.id,
+        symbol: tokenSymbol,
+        isActive: true,
+      },
+    });
+
+    if (!token) {
+      throw new BadRequestException(`代币 ${tokenSymbol} 在 ${networkName} 上不存在或未激活`);
+    }
+
+    let balance = await this.prisma.walletBalance.findUnique({
+      where: {
+        walletId_tokenId: {
+          walletId: wallet.id,
+          tokenId: token.id,
+        },
+      },
+    });
+
+    if (!balance) {
+      balance = await this.prisma.walletBalance.create({
+        data: {
+          walletId: wallet.id,
+          tokenId: token.id,
+          balance: 0,
+          frozenBalance: 0,
+        },
+      });
+    }
+
+    return {
+      balance: Number(balance.balance),
+      frozenBalance: Number(balance.frozenBalance),
+    };
+  }
+
+  // 充值（指定代币）
+  async deposit(
+    userId: string,
+    amount: number,
+    networkName: string,
+    tokenSymbol: string,
+    txHash?: string,
+    description?: string
+  ) {
     if (amount <= 0) {
       throw new BadRequestException('充值金额必须大于0');
     }
 
     const wallet = await this.getOrCreateWallet(userId);
-    const balanceBefore = Number(wallet.balance);
+    const { balance: balanceBefore } = await this.getTokenBalance(userId, networkName, tokenSymbol);
     const balanceAfter = balanceBefore + amount;
 
+    const network = await this.prisma.blockchainNetwork.findFirst({
+      where: { name: networkName },
+    });
+
+    const token = await this.prisma.token.findFirst({
+      where: { networkId: network!.id, symbol: tokenSymbol },
+    });
+
     return this.prisma.$transaction(async (tx) => {
-      const updatedWallet = await tx.wallet.update({
-        where: { userId },
-        data: {
-          balance: balanceAfter,
+      await tx.walletBalance.update({
+        where: {
+          walletId_tokenId: {
+            walletId: wallet.id,
+            tokenId: token!.id,
+          },
         },
+        data: { balance: balanceAfter },
       });
 
       await tx.transaction.create({
         data: {
           walletId: wallet.id,
+          tokenId: token!.id,
           type: 'DEPOSIT',
           amount: amount,
           balanceBefore: balanceBefore,
           balanceAfter: balanceAfter,
-          description: description || '充值',
+          txHash: txHash,
+          description: description || `${networkName} ${tokenSymbol} 充值`,
         },
       });
 
-      return updatedWallet;
+      return { balance: balanceAfter };
     });
   }
 
-  // 提现
-  async withdraw(userId: string, amount: number, address: string) {
+  // 提现（指定代币）
+  async withdraw(
+    userId: string,
+    amount: number,
+    address: string,
+    networkName: string,
+    tokenSymbol: string
+  ) {
     if (amount <= 0) {
       throw new BadRequestException('提现金额必须大于0');
     }
 
     const wallet = await this.getOrCreateWallet(userId);
-    
-    if (Number(wallet.balance) < amount) {
+    const { balance: balanceBefore } = await this.getTokenBalance(userId, networkName, tokenSymbol);
+
+    if (balanceBefore < amount) {
       throw new BadRequestException('余额不足');
     }
 
-    const balanceBefore = Number(wallet.balance);
     const balanceAfter = balanceBefore - amount;
 
+    const network = await this.prisma.blockchainNetwork.findFirst({
+      where: { name: networkName },
+    });
+
+    const token = await this.prisma.token.findFirst({
+      where: { networkId: network!.id, symbol: tokenSymbol },
+    });
+
     return this.prisma.$transaction(async (tx) => {
-      const updatedWallet = await tx.wallet.update({
-        where: { userId },
-        data: {
-          balance: balanceAfter,
+      await tx.walletBalance.update({
+        where: {
+          walletId_tokenId: {
+            walletId: wallet.id,
+            tokenId: token!.id,
+          },
         },
+        data: { balance: balanceAfter },
       });
 
       await tx.transaction.create({
         data: {
           walletId: wallet.id,
+          tokenId: token!.id,
           type: 'WITHDRAW',
           amount: amount,
           balanceBefore: balanceBefore,
@@ -101,21 +249,35 @@ export class WalletsService {
         },
       });
 
-      return updatedWallet;
+      return { balance: balanceAfter };
     });
   }
 
-  // 冻结资金（下单时）
-  async freezeFunds(userId: string, amount: number) {
+  // 冻结资金（下单时，指定代币）
+  async freezeFunds(userId: string, amount: number, networkName: string, tokenSymbol: string) {
     const wallet = await this.getOrCreateWallet(userId);
-    
-    if (Number(wallet.balance) < amount) {
+    const { balance } = await this.getTokenBalance(userId, networkName, tokenSymbol);
+
+    if (balance < amount) {
       throw new BadRequestException('余额不足');
     }
 
+    const network = await this.prisma.blockchainNetwork.findFirst({
+      where: { name: networkName },
+    });
+
+    const token = await this.prisma.token.findFirst({
+      where: { networkId: network!.id, symbol: tokenSymbol },
+    });
+
     return this.prisma.$transaction(async (tx) => {
-      await tx.wallet.update({
-        where: { userId },
+      await tx.walletBalance.update({
+        where: {
+          walletId_tokenId: {
+            walletId: wallet.id,
+            tokenId: token!.id,
+          },
+        },
         data: {
           balance: { decrement: amount },
           frozenBalance: { increment: amount },
@@ -124,13 +286,26 @@ export class WalletsService {
     });
   }
 
-  // 释放资金（订单完成时）
-  async releaseFunds(userId: string, amount: number) {
+  // 释放资金（订单完成时，指定代币）
+  async releaseFunds(userId: string, amount: number, networkName: string, tokenSymbol: string) {
     const wallet = await this.getOrCreateWallet(userId);
 
+    const network = await this.prisma.blockchainNetwork.findFirst({
+      where: { name: networkName },
+    });
+
+    const token = await this.prisma.token.findFirst({
+      where: { networkId: network!.id, symbol: tokenSymbol },
+    });
+
     return this.prisma.$transaction(async (tx) => {
-      await tx.wallet.update({
-        where: { userId },
+      await tx.walletBalance.update({
+        where: {
+          walletId_tokenId: {
+            walletId: wallet.id,
+            tokenId: token!.id,
+          },
+        },
         data: {
           frozenBalance: { decrement: amount },
           balance: { increment: amount },
@@ -139,30 +314,57 @@ export class WalletsService {
     });
   }
 
-  // 转账给卖家（订单完成时从冻结账户直接转给卖家）
-  async transferToSeller(buyerId: string, sellerId: string, amount: number, orderId: string) {
+  // 转账给卖家（订单完成时从冻结账户直接转给卖家，指定代币）
+  async transferToSeller(
+    buyerId: string,
+    sellerId: string,
+    amount: number,
+    orderId: string,
+    networkName: string,
+    tokenSymbol: string
+  ) {
     const buyerWallet = await this.getOrCreateWallet(buyerId);
     const sellerWallet = await this.getOrCreateWallet(sellerId);
 
-    if (Number(buyerWallet.frozenBalance) < amount) {
+    const { frozenBalance: buyerFrozen } = await this.getTokenBalance(buyerId, networkName, tokenSymbol);
+    const { balance: sellerBalanceBefore } = await this.getTokenBalance(sellerId, networkName, tokenSymbol);
+
+    if (buyerFrozen < amount) {
       throw new BadRequestException('冻结资金不足');
     }
 
-    const sellerBalanceBefore = Number(sellerWallet.balance);
     const sellerBalanceAfter = sellerBalanceBefore + amount;
+
+    const network = await this.prisma.blockchainNetwork.findFirst({
+      where: { name: networkName },
+    });
+
+    const token = await this.prisma.token.findFirst({
+      where: { networkId: network!.id, symbol: tokenSymbol },
+    });
 
     return this.prisma.$transaction(async (tx) => {
       // 从买家冻结扣除
-      await tx.wallet.update({
-        where: { userId: buyerId },
+      await tx.walletBalance.update({
+        where: {
+          walletId_tokenId: {
+            walletId: buyerWallet.id,
+            tokenId: token!.id,
+          },
+        },
         data: {
           frozenBalance: { decrement: amount },
         },
       });
 
       // 加到卖家余额
-      const updatedSellerWallet = await tx.wallet.update({
-        where: { userId: sellerId },
+      await tx.walletBalance.update({
+        where: {
+          walletId_tokenId: {
+            walletId: sellerWallet.id,
+            tokenId: token!.id,
+          },
+        },
         data: {
           balance: sellerBalanceAfter,
         },
@@ -172,6 +374,7 @@ export class WalletsService {
       await tx.transaction.create({
         data: {
           walletId: sellerWallet.id,
+          tokenId: token!.id,
           type: 'ORDER_RELEASE',
           amount: amount,
           balanceBefore: sellerBalanceBefore,
@@ -180,25 +383,36 @@ export class WalletsService {
           description: '订单完成，资金释放',
         },
       });
-
-      return updatedSellerWallet;
     });
   }
 
-  // 退款（订单取消时解冻并退回）
-  async refund(userId: string, amount: number, orderId: string) {
+  // 退款（订单取消时解冻并退回，指定代币）
+  async refund(userId: string, amount: number, orderId: string, networkName: string, tokenSymbol: string) {
     const wallet = await this.getOrCreateWallet(userId);
+    const { frozenBalance, balance: balanceBefore } = await this.getTokenBalance(userId, networkName, tokenSymbol);
 
-    if (Number(wallet.frozenBalance) < amount) {
+    if (frozenBalance < amount) {
       throw new BadRequestException('冻结资金不足');
     }
 
-    const balanceBefore = Number(wallet.balance);
     const balanceAfter = balanceBefore + amount;
 
+    const network = await this.prisma.blockchainNetwork.findFirst({
+      where: { name: networkName },
+    });
+
+    const token = await this.prisma.token.findFirst({
+      where: { networkId: network!.id, symbol: tokenSymbol },
+    });
+
     return this.prisma.$transaction(async (tx) => {
-      const updatedWallet = await tx.wallet.update({
-        where: { userId },
+      await tx.walletBalance.update({
+        where: {
+          walletId_tokenId: {
+            walletId: wallet.id,
+            tokenId: token!.id,
+          },
+        },
         data: {
           frozenBalance: { decrement: amount },
           balance: balanceAfter,
@@ -208,6 +422,7 @@ export class WalletsService {
       await tx.transaction.create({
         data: {
           walletId: wallet.id,
+          tokenId: token!.id,
           type: 'ORDER_REFUND',
           amount: amount,
           balanceBefore: balanceBefore,
@@ -216,15 +431,13 @@ export class WalletsService {
           description: '订单取消，资金退回',
         },
       });
-
-      return updatedWallet;
     });
   }
 
   // 获取交易记录
   async getTransactions(userId: string, skip = 0, take = 20) {
     const wallet = await this.getOrCreateWallet(userId);
-    
+
     return this.prisma.transaction.findMany({
       where: { walletId: wallet.id },
       skip,

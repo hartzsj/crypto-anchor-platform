@@ -32,26 +32,32 @@ export class TronMonitorService {
     this.logger.log('开始扫描USDT充值...');
 
     try {
-      // 获取所有有充值地址的钱包
-      const wallets = await this.prisma.wallet.findMany({
-        where: {
-          depositAddress: { not: null },
-        },
+      // 获取TRON网络
+      const tronNetwork = await this.prisma.blockchainNetwork.findFirst({
+        where: { name: 'TRON', isActive: true },
       });
 
-      for (const wallet of wallets) {
-        if (!wallet.depositAddress) continue;
+      if (!tronNetwork) {
+        this.logger.warn('TRON network not found');
+        return;
+      }
 
-        // 跳过无效地址（非真实TRON地址）
-        if (!this.isValidTronAddress(wallet.depositAddress)) {
-          this.logger.debug(`跳过无效地址: ${wallet.depositAddress}`);
+      // 获取所有有TRON充值地址的用户
+      const walletAddresses = await this.prisma.walletAddress.findMany({
+        where: { networkId: tronNetwork.id },
+        include: { user: true },
+      });
+
+      for (const wa of walletAddresses) {
+        if (!this.isValidTronAddress(wa.address)) {
+          this.logger.debug(`跳过无效地址: ${wa.address}`);
           continue;
         }
 
         try {
-          await this.checkAddressDeposit(wallet);
+          await this.checkAddressDeposit(wa.userId, wa.address);
         } catch (error) {
-          this.logger.error(`扫描地址 ${wallet.depositAddress} 失败:`, error);
+          this.logger.error(`扫描地址 ${wa.address} 失败:`, error);
         }
       }
     } catch (error) {
@@ -69,10 +75,7 @@ export class TronMonitorService {
   /**
    * 检查单个地址的USDT入账
    */
-  private async checkAddressDeposit(wallet: any) {
-    const address = wallet.depositAddress;
-
-    // 查询该地址的USDT交易记录
+  private async checkAddressDeposit(userId: string, address: string) {
     const url = `${TRONGRID_API}/v1/accounts/${address}/transactions/trc20?limit=20&contract_address=${USDT_CONTRACT_ADDRESS}`;
 
     const response = await fetch(url, {
@@ -88,29 +91,19 @@ export class TronMonitorService {
     const data = await response.json();
     const transactions = data.data || [];
 
-    // 处理入账交易
     for (const tx of transactions) {
-      // 只处理转入（to地址是用户充值地址）
       if (tx.to !== address) continue;
 
-      // 检查是否已处理过此交易
       const existingTx = await this.prisma.transaction.findFirst({
-        where: {
-          description: `链上充值: ${tx.transaction_id}`,
-        },
+        where: { txHash: tx.transaction_id },
       });
 
-      if (existingTx) {
-        continue; // 已处理，跳过
-      }
+      if (existingTx) continue;
 
-      // 入账金额（USDT有6位小数）
       const amount = parseFloat(tx.value) / 1e6;
-
       if (amount <= 0) continue;
 
-      // 自动入账
-      await this.processDeposit(wallet.userId, amount, tx.transaction_id);
+      await this.processDeposit(userId, amount, tx.transaction_id);
     }
   }
 
@@ -120,48 +113,18 @@ export class TronMonitorService {
   private async processDeposit(userId: string, amount: number, txHash: string) {
     this.logger.log(`用户 ${userId} 充值 ${amount} USDT, tx: ${txHash}`);
 
-    // 获取当前余额
-    const wallet = await this.prisma.wallet.findUnique({
-      where: { userId },
-    });
-
-    if (!wallet) {
-      this.logger.error(`用户钱包不存在: ${userId}`);
-      return;
+    try {
+      await this.walletsService.deposit(userId, amount, 'TRON', 'USDT', txHash);
+      this.logger.log(`✅ 用户 ${userId} 充值成功: ${amount} USDT`);
+    } catch (error) {
+      this.logger.error(`充值入账失败:`, error);
     }
-
-    const balanceBefore = Number(wallet.balance);
-    const balanceAfter = balanceBefore + amount;
-
-    // 更新余额并记录交易
-    await this.prisma.$transaction(async (tx) => {
-      await tx.wallet.update({
-        where: { userId },
-        data: {
-          balance: balanceAfter,
-        },
-      });
-
-      await tx.transaction.create({
-        data: {
-          walletId: wallet.id,
-          type: 'DEPOSIT',
-          amount: amount,
-          balanceBefore: balanceBefore,
-          balanceAfter: balanceAfter,
-          description: `链上充值: ${txHash}`,
-        },
-      });
-    });
-
-    this.logger.log(`✅ 用户 ${userId} 充值成功: ${amount} USDT`);
   }
 
   /**
    * 获取地址USDT余额
    */
   async getAddressBalance(address: string): Promise<number> {
-    // 验证地址格式
     if (!this.isValidTronAddress(address)) {
       return 0;
     }
@@ -183,7 +146,6 @@ export class TronMonitorService {
       const data = await response.json();
       const trc20Balances = data.data?.[0]?.trc20_balance || [];
 
-      // 查找USDT余额
       const usdtBalance = trc20Balances.find(
         (b: any) => b.token_id === USDT_CONTRACT_ADDRESS
       );

@@ -17,34 +17,29 @@ const common_1 = require("@nestjs/common");
 const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
 const tron_address_service_1 = require("./tron-address.service");
 const tron_monitor_service_1 = require("./tron-monitor.service");
-const prisma_service_1 = require("../prisma/prisma.service");
 const set_deposit_address_dto_1 = require("./dto/set-deposit-address.dto");
 let TronController = class TronController {
     tronAddressService;
     tronMonitorService;
-    prisma;
-    constructor(tronAddressService, tronMonitorService, prisma) {
+    constructor(tronAddressService, tronMonitorService) {
         this.tronAddressService = tronAddressService;
         this.tronMonitorService = tronMonitorService;
-        this.prisma = prisma;
     }
     async getDepositAddress(req) {
-        const address = await this.tronAddressService.generateDepositAddress(req.user.id);
+        const address = await this.tronAddressService.getDepositAddress(req.user.userId);
         return { address };
     }
     async setDepositAddress(req, body) {
-        await this.tronAddressService.setDepositAddress(req.user.id, body.address);
+        await this.tronAddressService.setDepositAddress(req.user.userId, body.address);
         return { success: true, address: body.address };
     }
     async getDepositBalance(req) {
-        const wallet = await this.prisma.wallet.findUnique({
-            where: { userId: req.user.id },
-        });
-        if (!wallet?.depositAddress) {
+        const address = await this.tronAddressService.getDepositAddress(req.user.userId);
+        if (!address) {
             return { balance: 0, address: null };
         }
-        const balance = await this.tronMonitorService.getAddressBalance(wallet.depositAddress);
-        return { balance, address: wallet.depositAddress };
+        const balance = await this.tronMonitorService.getAddressBalance(address);
+        return { balance, address };
     }
 };
 exports.TronController = TronController;
@@ -74,7 +69,6 @@ exports.TronController = TronController = __decorate([
     (0, common_1.Controller)('tron'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     __metadata("design:paramtypes", [tron_address_service_1.TronAddressService,
-        tron_monitor_service_1.TronMonitorService,
-        prisma_service_1.PrismaService])
+        tron_monitor_service_1.TronMonitorService])
 ], TronController);
 //# sourceMappingURL=tron.controller.js.map

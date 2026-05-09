@@ -20,9 +20,6 @@ export declare class UsersController {
             createdAt: Date;
             updatedAt: Date;
             userId: string;
-            balance: import("@prisma/client/runtime/library").Decimal;
-            frozenBalance: import("@prisma/client/runtime/library").Decimal;
-            depositAddress: string | null;
         } | null | undefined;
         id?: string | undefined;
         email?: string | undefined;

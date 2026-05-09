@@ -22,39 +22,57 @@ let TronAddressService = TronAddressService_1 = class TronAddressService {
         this.configService = configService;
         this.prisma = prisma;
     }
-    async generateDepositAddress(userId) {
-        const wallet = await this.prisma.wallet.findUnique({
-            where: { userId },
+    async getDepositAddress(userId) {
+        const tronNetwork = await this.prisma.blockchainNetwork.findFirst({
+            where: { name: 'TRON', isActive: true },
         });
-        if (wallet?.depositAddress) {
-            return wallet.depositAddress;
+        if (!tronNetwork) {
+            this.logger.error('TRON network not found');
+            return null;
         }
-        const depositAddress = await this.createOrGetAddress(userId);
-        await this.prisma.wallet.update({
-            where: { userId },
-            data: { depositAddress },
+        const walletAddress = await this.prisma.walletAddress.findUnique({
+            where: {
+                userId_networkId: {
+                    userId,
+                    networkId: tronNetwork.id,
+                },
+            },
         });
-        this.logger.log(`用户 ${userId} 充值地址: ${depositAddress}`);
-        return depositAddress;
-    }
-    async createOrGetAddress(userId) {
-        return `TUser${userId.slice(0, 8)}DepositAddressPending`;
+        return walletAddress?.address || null;
     }
     async setDepositAddress(userId, address) {
         if (!this.isValidTronAddress(address)) {
             throw new Error('无效的TRON地址格式');
         }
-        const existing = await this.prisma.wallet.findFirst({
-            where: { depositAddress: address },
+        const tronNetwork = await this.prisma.blockchainNetwork.findFirst({
+            where: { name: 'TRON', isActive: true },
+        });
+        if (!tronNetwork) {
+            throw new Error('TRON network not found');
+        }
+        const existing = await this.prisma.walletAddress.findFirst({
+            where: { address },
         });
         if (existing && existing.userId !== userId) {
             throw new Error('该地址已被其他用户使用');
         }
-        await this.prisma.wallet.update({
-            where: { userId },
-            data: { depositAddress: address },
+        await this.prisma.walletAddress.upsert({
+            where: {
+                userId_networkId: {
+                    userId,
+                    networkId: tronNetwork.id,
+                },
+            },
+            create: {
+                userId,
+                networkId: tronNetwork.id,
+                address,
+            },
+            update: {
+                address,
+            },
         });
-        this.logger.log(`用户 ${userId} 设置充值地址: ${address}`);
+        this.logger.log(`用户 ${userId} 设置TRON充值地址: ${address}`);
     }
     isValidTronAddress(address) {
         return /^T[A-Za-z1-9]{33}$/.test(address);

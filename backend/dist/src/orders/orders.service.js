@@ -32,7 +32,7 @@ let OrdersService = class OrdersService {
         if (item.sellerId === buyerId) {
             throw new common_1.BadRequestException('不能购买自己的物品');
         }
-        const buyerBalance = await this.walletsService.getBalance(buyerId);
+        const buyerBalance = await this.walletsService.getTokenBalance(buyerId, 'TRON', 'USDT');
         if (buyerBalance.balance < Number(item.price)) {
             throw new common_1.BadRequestException('余额不足');
         }
@@ -62,7 +62,7 @@ let OrdersService = class OrdersService {
         if (order.status !== 'PENDING') {
             throw new common_1.BadRequestException('订单状态异常');
         }
-        await this.walletsService.freezeFunds(buyerId, Number(order.price));
+        await this.walletsService.freezeFunds(buyerId, Number(order.price), 'TRON', 'USDT');
         return this.prisma.order.update({
             where: { id: orderId },
             data: {
@@ -116,7 +116,7 @@ let OrdersService = class OrdersService {
         if (!order) {
             throw new common_1.NotFoundException('订单不存在');
         }
-        await this.walletsService.transferToSeller(order.buyerId, order.sellerId, Number(order.price), orderId);
+        await this.walletsService.transferToSeller(order.buyerId, order.sellerId, Number(order.price), orderId, 'TRON', 'USDT');
         await this.itemsService.markAsSold(order.itemId);
         return this.prisma.order.update({
             where: { id: orderId },
@@ -140,7 +140,7 @@ let OrdersService = class OrdersService {
             throw new common_1.BadRequestException('只能取消待支付或已支付的订单');
         }
         if (order.status === 'PAID') {
-            await this.walletsService.refund(order.buyerId, Number(order.price), orderId);
+            await this.walletsService.refund(order.buyerId, Number(order.price), orderId, 'TRON', 'USDT');
         }
         return this.prisma.order.update({
             where: { id: orderId },
@@ -181,7 +181,7 @@ let OrdersService = class OrdersService {
             throw new common_1.BadRequestException('订单未处于争议状态');
         }
         if (refund) {
-            await this.walletsService.refund(order.buyerId, Number(order.price), orderId);
+            await this.walletsService.refund(order.buyerId, Number(order.price), orderId, 'TRON', 'USDT');
             return this.prisma.order.update({
                 where: { id: orderId },
                 data: {

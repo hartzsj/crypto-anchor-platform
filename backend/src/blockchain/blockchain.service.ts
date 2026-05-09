@@ -226,7 +226,7 @@ export class BlockchainService implements OnModuleInit {
         buyerAddress,
         sellerAddress,
         amount,
-        tokenId: await this.get tokenIdFromSymbol(networkType, tokenSymbol),
+        tokenId: await this.getTokenIdFromSymbol(networkType, tokenSymbol),
         status: 'CREATED',
       },
     });
@@ -353,5 +353,65 @@ export class BlockchainService implements OnModuleInit {
     if (!token) throw new Error(`Token ${symbol} not found on ${networkType}`);
 
     return token.id;
+  }
+
+  /**
+   * 获取用户钱包地址
+   */
+  async getWalletAddress(userId: string, networkName: string): Promise<string | null> {
+    const network = await this.prisma.blockchainNetwork.findFirst({
+      where: { name: networkName, isActive: true },
+    });
+
+    if (!network) return null;
+
+    const walletAddress = await this.prisma.walletAddress.findUnique({
+      where: {
+        userId_networkId: {
+          userId,
+          networkId: network.id,
+        },
+      },
+    });
+
+    return walletAddress?.address || null;
+  }
+
+  /**
+   * 设置用户钱包地址
+   */
+  async setWalletAddress(userId: string, networkName: string, address: string) {
+    const network = await this.prisma.blockchainNetwork.findFirst({
+      where: { name: networkName, isActive: true },
+    });
+
+    if (!network) {
+      throw new Error(`Network ${networkName} not found or inactive`);
+    }
+
+    // 验证地址格式
+    if (!this.isValidAddress(address, networkName as BlockchainType)) {
+      throw new Error(`Invalid address format for ${networkName}`);
+    }
+
+    // 创建或更新钱包地址
+    await this.prisma.walletAddress.upsert({
+      where: {
+        userId_networkId: {
+          userId,
+          networkId: network.id,
+        },
+      },
+      create: {
+        userId,
+        networkId: network.id,
+        address,
+      },
+      update: {
+        address,
+      },
+    });
+
+    return { success: true };
   }
 }

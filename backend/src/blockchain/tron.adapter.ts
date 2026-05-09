@@ -1,6 +1,6 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import TronWeb from 'tronweb';
+import TronWebLib from 'tronweb';
 import {
   BlockchainAdapter,
   BlockchainType,
@@ -10,9 +10,12 @@ import {
   BlockchainNetworkConfig,
 } from './blockchain.interface';
 
+// TronWeb 导出的是一个对象，需要使用 createInstance
+const TronWeb = TronWebLib as any;
+
 @Injectable()
 export class TronAdapter implements BlockchainAdapter, OnModuleInit {
-  private tronWeb: TronWeb;
+  private tronWeb: any;
   private contract: any;
   private config: BlockchainNetworkConfig;
 
@@ -29,7 +32,7 @@ export class TronAdapter implements BlockchainAdapter, OnModuleInit {
 
   async onModuleInit() {
     // 初始化 TronWeb
-    this.tronWeb = new TronWeb({
+    this.tronWeb = TronWeb.createInstance({
       fullHost: this.config.rpcUrl,
       privateKey: this.configService.get('TRON_PRIVATE_KEY', ''),
     });

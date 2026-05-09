@@ -117,7 +117,17 @@ let AdminController = class AdminController {
                 role: true,
                 reputation: true,
                 createdAt: true,
-                wallet: { select: { balance: true, frozenBalance: true } },
+                wallet: {
+                    select: {
+                        balances: {
+                            select: {
+                                balance: true,
+                                frozenBalance: true,
+                                token: { select: { symbol: true } },
+                            },
+                        },
+                    },
+                },
             },
         });
         const total = await this.prisma.user.count();

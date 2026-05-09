@@ -1,14 +1,12 @@
 import { TronAddressService } from './tron-address.service';
 import { TronMonitorService } from './tron-monitor.service';
-import { PrismaService } from '../prisma/prisma.service';
 import { SetDepositAddressDto } from './dto/set-deposit-address.dto';
 export declare class TronController {
     private tronAddressService;
     private tronMonitorService;
-    private prisma;
-    constructor(tronAddressService: TronAddressService, tronMonitorService: TronMonitorService, prisma: PrismaService);
+    constructor(tronAddressService: TronAddressService, tronMonitorService: TronMonitorService);
     getDepositAddress(req: any): Promise<{
-        address: string;
+        address: string | null;
     }>;
     setDepositAddress(req: any, body: SetDepositAddressDto): Promise<{
         success: boolean;

@@ -26,7 +26,7 @@ export class OrdersService {
     }
 
     // 检查买家是否有足够余额
-    const buyerBalance = await this.walletsService.getBalance(buyerId);
+    const buyerBalance = await this.walletsService.getTokenBalance(buyerId, 'TRON', 'USDT');
     if (buyerBalance.balance < Number(item.price)) {
       throw new BadRequestException('余额不足');
     }
@@ -66,7 +66,7 @@ export class OrdersService {
     }
 
     // 冻结买家资金
-    await this.walletsService.freezeFunds(buyerId, Number(order.price));
+    await this.walletsService.freezeFunds(buyerId, Number(order.price), 'TRON', 'USDT');
 
     // 更新订单状态
     return this.prisma.order.update({
@@ -144,6 +144,8 @@ export class OrdersService {
       order.sellerId,
       Number(order.price),
       orderId,
+      'TRON',
+      'USDT',
     );
 
     // 标记物品为已售出
@@ -179,7 +181,7 @@ export class OrdersService {
 
     // 如果已支付，需要退款解冻资金
     if (order.status === 'PAID') {
-      await this.walletsService.refund(order.buyerId, Number(order.price), orderId);
+      await this.walletsService.refund(order.buyerId, Number(order.price), orderId, 'TRON', 'USDT');
     }
 
     // 更新订单状态
@@ -234,8 +236,8 @@ export class OrdersService {
 
     if (refund) {
       // 退款给买家
-      await this.walletsService.refund(order.buyerId, Number(order.price), orderId);
-      
+      await this.walletsService.refund(order.buyerId, Number(order.price), orderId, 'TRON', 'USDT');
+
       return this.prisma.order.update({
         where: { id: orderId },
         data: {

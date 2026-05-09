@@ -16,24 +16,31 @@ exports.WalletsController = void 0;
 const common_1 = require("@nestjs/common");
 const wallets_service_1 = require("./wallets.service");
 const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
-const deposit_dto_1 = require("./dto/deposit.dto");
-const withdraw_dto_1 = require("./dto/withdraw.dto");
 let WalletsController = class WalletsController {
     walletsService;
     constructor(walletsService) {
         this.walletsService = walletsService;
     }
     async getBalance(req) {
-        return this.walletsService.getBalance(req.user.id);
+        return this.walletsService.getBalance(req.user.userId);
     }
     async deposit(req, body) {
-        return this.walletsService.deposit(req.user.id, body.amount, body.description);
+        const network = body.network || 'TRON';
+        const token = body.token || 'USDT';
+        return this.walletsService.deposit(req.user.userId, body.amount, network, token, undefined, body.description);
     }
     async withdraw(req, body) {
-        return this.walletsService.withdraw(req.user.id, body.amount, body.address);
+        const network = body.network || 'TRON';
+        const token = body.token || 'USDT';
+        return this.walletsService.withdraw(req.user.userId, body.amount, body.address, network, token);
     }
-    async getTransactions(req) {
-        return this.walletsService.getTransactions(req.user.id);
+    async getTransactions(req, skip, take) {
+        const skipNum = parseInt(skip || '0', 10);
+        const takeNum = parseInt(take || '20', 10);
+        return this.walletsService.getTransactions(req.user.userId, skipNum, takeNum);
+    }
+    async getTokenBalance(req, network, token) {
+        return this.walletsService.getTokenBalance(req.user.userId, network, token);
     }
 };
 exports.WalletsController = WalletsController;
@@ -49,7 +56,7 @@ __decorate([
     __param(0, (0, common_1.Request)()),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, deposit_dto_1.DepositDto]),
+    __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", Promise)
 ], WalletsController.prototype, "deposit", null);
 __decorate([
@@ -57,16 +64,27 @@ __decorate([
     __param(0, (0, common_1.Request)()),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, withdraw_dto_1.WithdrawDto]),
+    __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", Promise)
 ], WalletsController.prototype, "withdraw", null);
 __decorate([
     (0, common_1.Get)('transactions'),
     __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Query)('skip')),
+    __param(2, (0, common_1.Query)('take')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [Object, String, String]),
     __metadata("design:returntype", Promise)
 ], WalletsController.prototype, "getTransactions", null);
+__decorate([
+    (0, common_1.Get)('token-balance'),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Query)('network')),
+    __param(2, (0, common_1.Query)('token')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String, String]),
+    __metadata("design:returntype", Promise)
+], WalletsController.prototype, "getTokenBalance", null);
 exports.WalletsController = WalletsController = __decorate([
     (0, common_1.Controller)('wallets'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),

@@ -2,7 +2,6 @@ import { Controller, Post, Body, Get, UseGuards, Request } from '@nestjs/common'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { TronAddressService } from './tron-address.service';
 import { TronMonitorService } from './tron-monitor.service';
-import { PrismaService } from '../prisma/prisma.service';
 import { SetDepositAddressDto } from './dto/set-deposit-address.dto';
 
 @Controller('tron')
@@ -11,7 +10,6 @@ export class TronController {
   constructor(
     private tronAddressService: TronAddressService,
     private tronMonitorService: TronMonitorService,
-    private prisma: PrismaService,
   ) {}
 
   /**
@@ -19,7 +17,7 @@ export class TronController {
    */
   @Get('deposit-address')
   async getDepositAddress(@Request() req) {
-    const address = await this.tronAddressService.generateDepositAddress(req.user.id);
+    const address = await this.tronAddressService.getDepositAddress(req.user.userId);
     return { address };
   }
 
@@ -28,7 +26,7 @@ export class TronController {
    */
   @Post('deposit-address')
   async setDepositAddress(@Request() req, @Body() body: SetDepositAddressDto) {
-    await this.tronAddressService.setDepositAddress(req.user.id, body.address);
+    await this.tronAddressService.setDepositAddress(req.user.userId, body.address);
     return { success: true, address: body.address };
   }
 
@@ -37,15 +35,13 @@ export class TronController {
    */
   @Get('deposit-balance')
   async getDepositBalance(@Request() req) {
-    const wallet = await this.prisma.wallet.findUnique({
-      where: { userId: req.user.id },
-    });
+    const address = await this.tronAddressService.getDepositAddress(req.user.userId);
 
-    if (!wallet?.depositAddress) {
+    if (!address) {
       return { balance: 0, address: null };
     }
 
-    const balance = await this.tronMonitorService.getAddressBalance(wallet.depositAddress);
-    return { balance, address: wallet.depositAddress };
+    const balance = await this.tronMonitorService.getAddressBalance(address);
+    return { balance, address };
   }
 }
