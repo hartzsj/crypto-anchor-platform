@@ -1,0 +1,286 @@
+import { OrdersService } from './orders.service';
+import { CreateOrderDto } from './dto/create-order.dto';
+import { ShipOrderDto } from './dto/ship-order.dto';
+import { DisputeOrderDto } from './dto/dispute-order.dto';
+import { ResolveDisputeDto } from './dto/resolve-dispute.dto';
+export declare class OrdersController {
+    private ordersService;
+    constructor(ordersService: OrdersService);
+    createOrder(req: any, body: CreateOrderDto): Promise<{
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        sellerId: string;
+        buyerId: string;
+        price: import("@prisma/client/runtime/library").Decimal;
+        status: import("@prisma/client").$Enums.OrderStatus;
+        itemId: string;
+        logisticsCompany: string | null;
+        trackingNumber: string | null;
+        paidAt: Date | null;
+        shippedAt: Date | null;
+        completedAt: Date | null;
+        canceledAt: Date | null;
+        autoConfirmAt: Date | null;
+    }>;
+    payOrder(id: string, req: any): Promise<{
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        sellerId: string;
+        buyerId: string;
+        price: import("@prisma/client/runtime/library").Decimal;
+        status: import("@prisma/client").$Enums.OrderStatus;
+        itemId: string;
+        logisticsCompany: string | null;
+        trackingNumber: string | null;
+        paidAt: Date | null;
+        shippedAt: Date | null;
+        completedAt: Date | null;
+        canceledAt: Date | null;
+        autoConfirmAt: Date | null;
+    }>;
+    shipOrder(id: string, req: any, body: ShipOrderDto): Promise<{
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        sellerId: string;
+        buyerId: string;
+        price: import("@prisma/client/runtime/library").Decimal;
+        status: import("@prisma/client").$Enums.OrderStatus;
+        itemId: string;
+        logisticsCompany: string | null;
+        trackingNumber: string | null;
+        paidAt: Date | null;
+        shippedAt: Date | null;
+        completedAt: Date | null;
+        canceledAt: Date | null;
+        autoConfirmAt: Date | null;
+    }>;
+    confirmReceipt(id: string, req: any): Promise<{
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        sellerId: string;
+        buyerId: string;
+        price: import("@prisma/client/runtime/library").Decimal;
+        status: import("@prisma/client").$Enums.OrderStatus;
+        itemId: string;
+        logisticsCompany: string | null;
+        trackingNumber: string | null;
+        paidAt: Date | null;
+        shippedAt: Date | null;
+        completedAt: Date | null;
+        canceledAt: Date | null;
+        autoConfirmAt: Date | null;
+    }>;
+    cancelOrder(id: string, req: any): Promise<{
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        sellerId: string;
+        buyerId: string;
+        price: import("@prisma/client/runtime/library").Decimal;
+        status: import("@prisma/client").$Enums.OrderStatus;
+        itemId: string;
+        logisticsCompany: string | null;
+        trackingNumber: string | null;
+        paidAt: Date | null;
+        shippedAt: Date | null;
+        completedAt: Date | null;
+        canceledAt: Date | null;
+        autoConfirmAt: Date | null;
+    }>;
+    disputeOrder(id: string, req: any, body: DisputeOrderDto): Promise<{
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        sellerId: string;
+        buyerId: string;
+        price: import("@prisma/client/runtime/library").Decimal;
+        status: import("@prisma/client").$Enums.OrderStatus;
+        itemId: string;
+        logisticsCompany: string | null;
+        trackingNumber: string | null;
+        paidAt: Date | null;
+        shippedAt: Date | null;
+        completedAt: Date | null;
+        canceledAt: Date | null;
+        autoConfirmAt: Date | null;
+    }>;
+    resolveDispute(id: string, req: any, body: ResolveDisputeDto): Promise<{
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        sellerId: string;
+        buyerId: string;
+        price: import("@prisma/client/runtime/library").Decimal;
+        status: import("@prisma/client").$Enums.OrderStatus;
+        itemId: string;
+        logisticsCompany: string | null;
+        trackingNumber: string | null;
+        paidAt: Date | null;
+        shippedAt: Date | null;
+        completedAt: Date | null;
+        canceledAt: Date | null;
+        autoConfirmAt: Date | null;
+    }>;
+    getMyBuyOrders(req: any, skip?: number, take?: number): Promise<{
+        orders: ({
+            item: {
+                id: string;
+                createdAt: Date;
+                updatedAt: Date;
+                sellerId: string;
+                title: string;
+                description: string;
+                images: string[];
+                price: import("@prisma/client/runtime/library").Decimal;
+                category: string;
+                location: string | null;
+                serialNumber: string | null;
+                status: import("@prisma/client").$Enums.ItemStatus;
+                approvedBy: string | null;
+                approvedAt: Date | null;
+                rejectedReason: string | null;
+            };
+            review: {
+                id: string;
+                createdAt: Date;
+                orderId: string;
+                reviewerId: string;
+                revieweeId: string;
+                rating: number;
+                comment: string | null;
+            } | null;
+            seller: {
+                id: string;
+                username: string;
+                nickname: string;
+            };
+        } & {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            sellerId: string;
+            buyerId: string;
+            price: import("@prisma/client/runtime/library").Decimal;
+            status: import("@prisma/client").$Enums.OrderStatus;
+            itemId: string;
+            logisticsCompany: string | null;
+            trackingNumber: string | null;
+            paidAt: Date | null;
+            shippedAt: Date | null;
+            completedAt: Date | null;
+            canceledAt: Date | null;
+            autoConfirmAt: Date | null;
+        })[];
+        total: number;
+    }>;
+    getMySellOrders(req: any, skip?: number, take?: number): Promise<{
+        orders: ({
+            item: {
+                id: string;
+                createdAt: Date;
+                updatedAt: Date;
+                sellerId: string;
+                title: string;
+                description: string;
+                images: string[];
+                price: import("@prisma/client/runtime/library").Decimal;
+                category: string;
+                location: string | null;
+                serialNumber: string | null;
+                status: import("@prisma/client").$Enums.ItemStatus;
+                approvedBy: string | null;
+                approvedAt: Date | null;
+                rejectedReason: string | null;
+            };
+            review: {
+                id: string;
+                createdAt: Date;
+                orderId: string;
+                reviewerId: string;
+                revieweeId: string;
+                rating: number;
+                comment: string | null;
+            } | null;
+            buyer: {
+                id: string;
+                username: string;
+                nickname: string;
+            };
+        } & {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            sellerId: string;
+            buyerId: string;
+            price: import("@prisma/client/runtime/library").Decimal;
+            status: import("@prisma/client").$Enums.OrderStatus;
+            itemId: string;
+            logisticsCompany: string | null;
+            trackingNumber: string | null;
+            paidAt: Date | null;
+            shippedAt: Date | null;
+            completedAt: Date | null;
+            canceledAt: Date | null;
+            autoConfirmAt: Date | null;
+        })[];
+        total: number;
+    }>;
+    getOne(id: string, req: any): Promise<{
+        item: {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            sellerId: string;
+            title: string;
+            description: string;
+            images: string[];
+            price: import("@prisma/client/runtime/library").Decimal;
+            category: string;
+            location: string | null;
+            serialNumber: string | null;
+            status: import("@prisma/client").$Enums.ItemStatus;
+            approvedBy: string | null;
+            approvedAt: Date | null;
+            rejectedReason: string | null;
+        };
+        review: {
+            id: string;
+            createdAt: Date;
+            orderId: string;
+            reviewerId: string;
+            revieweeId: string;
+            rating: number;
+            comment: string | null;
+        } | null;
+        seller: {
+            id: string;
+            username: string;
+            nickname: string;
+        };
+        buyer: {
+            id: string;
+            username: string;
+            nickname: string;
+        };
+    } & {
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        sellerId: string;
+        buyerId: string;
+        price: import("@prisma/client/runtime/library").Decimal;
+        status: import("@prisma/client").$Enums.OrderStatus;
+        itemId: string;
+        logisticsCompany: string | null;
+        trackingNumber: string | null;
+        paidAt: Date | null;
+        shippedAt: Date | null;
+        completedAt: Date | null;
+        canceledAt: Date | null;
+        autoConfirmAt: Date | null;
+    }>;
+}

@@ -1,0 +1,169 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 用户表
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  username      String   @unique
+  password      String
+  avatar        String?
+  nickname      String
+  role          Role     @default(USER) // USER, ADMIN
+  reputation    Int      @default(100) // 信誉分，默认100
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  wallet        Wallet?
+  itemsPosted   Item[]
+  ordersBuyer   Order[]  @relation("BuyerOrders")
+  ordersSeller  Order[]  @relation("SellerOrders")
+  reviewsGiven  Review[] @relation("ReviewGiver")
+  reviewsReceived Review[] @relation("ReviewReceiver")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+// 钱包表
+model Wallet {
+  id            String   @id @default(uuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id])
+  balance       Decimal  @default(0) @db.Decimal(18, 8) // USDT余额，支持8位小数
+  frozenBalance Decimal  @default(0) @db.Decimal(18, 8) // 冻结余额（挂单中）
+  depositAddress String? @unique // TRON充值地址
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  transactions  Transaction[]
+}
+
+// 交易记录表
+model Transaction {
+  id            String          @id @default(uuid())
+  walletId      String
+  wallet        Wallet          @relation(fields: [walletId], references: [id])
+  type          TransactionType
+  amount        Decimal         @db.Decimal(18, 8)
+  balanceBefore Decimal         @db.Decimal(18, 8)
+  balanceAfter  Decimal         @db.Decimal(18, 8)
+  description   String?
+  orderId       String?         // 关联订单（如果是交易）
+  order         Order?          @relation(fields: [orderId], references: [id])
+  createdAt     DateTime        @default(now())
+}
+
+enum TransactionType {
+  DEPOSIT       // 充值
+  WITHDRAW      // 提现
+  ORDER_PAY     // 下单支付
+  ORDER_RELEASE // 订单放款
+  ORDER_REFUND  // 订单退款
+}
+
+// 物品表
+model Item {
+  id            String        @id @default(uuid())
+  sellerId      String
+  seller        User          @relation(fields: [sellerId], references: [id])
+  title         String
+  description   String
+  images        String[]      // 图片URL数组
+  price         Decimal       @db.Decimal(18, 8) // USDT价格
+  category      String        // 分类
+  location      String?       // 物品所在地
+  serialNumber  String?       // 序列号（可选，用于高价值物品）
+  status        ItemStatus    @default(PENDING)
+  approvedBy    String?       // 审核人ID
+  approvedAt    DateTime?
+  rejectedReason String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  orders        Order[]
+
+  @@index([status])
+  @@index([category])
+  @@index([sellerId])
+}
+
+enum ItemStatus {
+  PENDING     // 待审核
+  APPROVED    // 已审核
+  REJECTED    // 已拒绝
+  SOLD        // 已售出
+}
+
+// 订单表
+model Order {
+  id            String        @id @default(uuid())
+  itemId        String
+  item          Item          @relation(fields: [itemId], references: [id])
+  buyerId       String
+  buyer         User          @relation("BuyerOrders", fields: [buyerId], references: [id])
+  sellerId      String
+  seller        User          @relation("SellerOrders", fields: [sellerId], references: [id])
+  price         Decimal       @db.Decimal(18, 8) // 成交价格
+  status        OrderStatus   @default(PENDING)
+  
+  // 物流信息
+  logisticsCompany String?    // 物流公司
+  trackingNumber   String?    // 物流单号
+  
+  // 时间戳
+  paidAt          DateTime?
+  shippedAt       DateTime?
+  completedAt     DateTime?
+  canceledAt      DateTime?
+  
+  // 自动确认收货倒计时
+  autoConfirmAt   DateTime?
+  
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  review          Review?
+  transactions    Transaction[]
+
+  @@index([status])
+  @@index([buyerId])
+  @@index([sellerId])
+}
+
+enum OrderStatus {
+  PENDING       // 待支付
+  PAID          // 已支付（资金托管中）
+  SHIPPED       // 已发货
+  COMPLETED     // 已完成
+  CANCELED      // 已取消
+  DISPUTED      // 争议中
+}
+
+// 评价表
+model Review {
+  id            String   @id @default(uuid())
+  orderId       String   @unique
+  order         Order    @relation(fields: [orderId], references: [id])
+  reviewerId    String
+  reviewer      User     @relation("ReviewGiver", fields: [reviewerId], references: [id])
+  revieweeId    String
+  reviewee      User     @relation("ReviewReceiver", fields: [revieweeId], references: [id])
+  rating        Int      // 1-5星
+  comment       String?
+  createdAt     DateTime @default(now())
+
+  @@index([reviewerId])
+  @@index([revieweeId])
+}

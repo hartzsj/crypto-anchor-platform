@@ -1,0 +1,244 @@
+# 🔗 CryptoAnchor - 数字货币与实物锚定交易平台
+
+一个基于 Next.js + NestJS 的全栈交易平台，支持使用 USDT 进行数字货币交易，并实现现实物品的锚定交割。
+
+## ✨ 核心特性
+
+- 💰 **USDT 交易** - 使用稳定币交易，避免价格波动风险
+- 🔒 **资金托管** - 买家付款后资金被托管，确认收货后自动释放
+- 📦 **物品市场** - 发布、浏览、搜索现实物品，支持分类和价格筛选
+- ⭐ **信誉系统** - 买卖双方互评，累积信誉分
+- 🚚 **物流追踪** - 卖家发货后支持物流单号追踪
+- ⏰ **自动确认** - 7天未确认收货自动完成订单
+
+## 🏗️ 技术栈
+
+### 前端
+- **Next.js 15** - React 框架
+- **TailwindCSS** - 样式系统
+- **TypeScript** - 类型安全
+- **Axios** - HTTP 客户端
+
+### 后端
+- **NestJS** - Node.js 企业级框架
+- **Prisma** - ORM 工具
+- **PostgreSQL** - 数据库
+- **JWT** - 身份认证
+- **bcryptjs** - 密码加密
+
+### 部署
+- **Docker** - 容器化
+- **docker-compose** - 一键启动
+
+## 🚀 快速开始
+
+### 前置要求
+
+- Node.js 18+
+- PostgreSQL 14+（本地安装或使用云服务）
+- npm 或 yarn
+
+> **注意：** 如果你没有安装 Docker，可以直接使用本地 PostgreSQL 或者使用免费的云数据库（如 [Supabase](https://supabase.com/)、[Neon](https://neon.tech/)）。
+
+### 方案一：使用 Docker（推荐）
+
+```bash
+# 启动 PostgreSQL 数据库
+docker compose up -d
+```
+
+### 方案二：使用本地/云数据库
+
+1. 创建 PostgreSQL 数据库
+2. 修改 `backend/.env` 中的 `DATABASE_URL`
+
+### 后端设置
+
+```bash
+cd backend
+
+# 安装依赖
+npm install
+
+# 生成 Prisma 客户端
+npx prisma generate
+
+# 应用数据库迁移
+npx prisma migrate dev
+
+# 启动后端服务
+npm run start:dev
+```
+
+后端将运行在 `http://localhost:3001`
+
+### 前端设置
+
+```bash
+cd frontend
+
+# 安装依赖
+npm install
+
+# 启动前端开发服务器
+npm run dev
+```
+
+前端将运行在 `http://localhost:3000`
+
+## 📁 项目结构
+
+```
+crypto-anchor-platform/
+├── backend/                # NestJS 后端
+│   ├── src/
+│   │   ├── auth/          # 认证模块（登录/注册/JWT）
+│   │   ├── users/         # 用户模块
+│   │   ├── wallets/       # 钱包模块（充值/提现/记账）
+│   │   ├── items/         # 物品模块（发布/审核/搜索）
+│   │   ├── orders/        # 订单模块（下单/托管/发货/确认）
+│   │   ├── reviews/       # 评价模块（互评/信誉）
+│   │   ├── prisma/        # Prisma 服务
+│   │   └── app.module.ts
+│   ├── prisma/
+│   │   └── schema.prisma  # 数据库 Schema
+│   └── .env               # 环境变量
+├── frontend/              # Next.js 前端
+│   ├── app/              # 页面路由
+│   │   ├── page.tsx      # 首页
+│   │   ├── login/        # 登录页
+│   │   ├── register/     # 注册页
+│   │   ├── items/        # 物品相关页面
+│   │   ├── orders/       # 订单页面
+│   │   └── wallet/       # 钱包页面
+│   ├── components/       # 组件
+│   ├── contexts/         # React Context
+│   └── lib/
+│       └── api.ts        # API 服务层
+├── docker-compose.yml    # Docker 配置
+└── README.md
+```
+
+## 🔑 核心 API
+
+### 认证
+- `POST /api/auth/register` - 注册
+- `POST /api/auth/login` - 登录
+
+### 钱包
+- `GET /api/wallets/balance` - 查询余额
+- `POST /api/wallets/deposit` - 充值
+- `POST /api/wallets/withdraw` - 提现
+- `GET /api/wallets/transactions` - 交易记录
+
+### 物品
+- `GET /api/items` - 获取物品列表
+- `GET /api/items/:id` - 获取物品详情
+- `POST /api/items` - 发布物品
+- `POST /api/items/:id/approve` - 审核通过（管理员）
+- `POST /api/items/:id/reject` - 审核拒绝（管理员）
+
+### 订单
+- `POST /api/orders` - 创建订单
+- `POST /api/orders/:id/pay` - 支付订单
+- `POST /api/orders/:id/ship` - 发货
+- `POST /api/orders/:id/confirm` - 确认收货
+- `POST /api/orders/:id/cancel` - 取消订单
+- `POST /api/orders/:id/dispute` - 发起争议
+- `GET /api/orders/my/buy` - 我的购买
+- `GET /api/orders/my/sell` - 我的销售
+
+### 评价
+- `POST /api/reviews` - 创建评价
+
+## 🔄 交易流程
+
+```
+1. 卖家发布物品 → 平台审核
+2. 买家浏览并下单
+3. 买家支付 USDT → 资金托管
+4. 卖家发货（填写物流）
+5. 买家确认收货 → 资金释放给卖家
+6. 双方互评 → 更新信誉分
+
+注：7天未确认收货将自动完成订单
+```
+
+## 📊 数据库模型
+
+- **User** - 用户（邮箱、用户名、密码、角色、信誉分）
+- **Wallet** - 钱包（USDT余额、冻结余额）
+- **Transaction** - 交易记录（充值、提现、订单支付/放款/退款）
+- **Item** - 物品（标题、描述、图片、价格、分类、状态）
+- **Order** - 订单（买家、卖家、价格、状态、物流信息）
+- **Review** - 评价（订单、评分、评论）
+
+## 🔐 安全特性
+
+- 密码使用 bcrypt 加密存储
+- JWT 令牌认证
+- 资金托管机制
+- 信誉评分系统
+- 争议仲裁功能
+
+## 🛠️ 开发命令
+
+### 后端
+
+```bash
+# 开发模式
+npm run start:dev
+
+# 生产模式
+npm run build
+npm run start:prod
+
+# 数据库迁移
+npx prisma migrate dev
+
+# 查看数据库
+npx prisma studio
+```
+
+### 前端
+
+```bash
+# 开发模式
+npm run dev
+
+# 构建
+npm run build
+
+# 生产模式
+npm run start
+```
+
+## 📝 环境变量
+
+### 后端 (.env)
+```env
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/crypto_anchor
+JWT_SECRET=your-super-secret-jwt-key
+JWT_EXPIRES_IN=7d
+PORT=3001
+FRONTEND_URL=http://localhost:3000
+```
+
+### 前端 (.env)
+```env
+NEXT_PUBLIC_API_URL=http://localhost:3001/api
+```
+
+## 🎯 未来计划
+
+- [ ] 链上智能合约托管
+- [ ] 多币种支持（BTC、ETH）
+- [ ] 第三方验货服务
+- [ ] 邮件/短信通知
+- [ ] KYC 认证
+- [ ] 移动端 App
+- [ ] K线图表和行情数据
+
+## 📄 许可证
+
+MIT
