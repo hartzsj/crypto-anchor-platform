@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { itemsApi } from '@/lib/api';
 import { Item } from '@/lib/types';
 import { SearchIcon, FilterIcon, PackageIcon, StarIcon } from '@/components/Icons';
+import { useAuth } from '@/contexts/AuthContext';
 
 const CATEGORIES = ['电子产品', '服装鞋帽', '家居用品', '运动户外', '图书文具', '其他'];
 
@@ -15,6 +16,7 @@ export default function ItemsPage() {
   const [category, setCategory] = useState('');
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
+  const { isAuthenticated } = useAuth();
 
   useEffect(() => {
     loadItems();
@@ -47,11 +49,21 @@ export default function ItemsPage() {
     <div className="min-h-[100dvh] py-8 bg-[var(--canvas)]">
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-[var(--text)]">
-            物品市场
-          </h1>
-          <p className="mt-2 text-[var(--text-muted)]">发现心仪之物，开启交易</p>
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-[var(--text)]">
+              物品市场
+            </h1>
+            <p className="mt-2 text-[var(--text-muted)]">发现心仪之物，开启交易</p>
+          </div>
+          {isAuthenticated && (
+            <Link
+              href="/items/create"
+              className="px-6 py-3 bg-[var(--accent)] text-white rounded-xl font-semibold hover:bg-[var(--accent-hover)] transition-all duration-150 active:scale-[0.98] shadow-[var(--shadow-sm)]"
+            >
+              发布物品
+            </Link>
+          )}
         </div>
 
         {/* Filters */}

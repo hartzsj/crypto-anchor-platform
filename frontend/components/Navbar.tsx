@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 // SVG Icons
 const LogoIcon = () => (
@@ -26,18 +26,58 @@ const CloseIcon = () => (
   </svg>
 );
 
-const UserIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
-    <circle cx="10" cy="6" r="4" />
-    <path d="M3 18c0-4 3.5-7 7-7s7 3 7 7" />
+const ChevronDownIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+    <path d="M4 6l4 4 4-4" />
   </svg>
 );
 
-const LogoutIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5">
-    <path d="M6 2H4a2 2 0 00-2 2v10a2 2 0 002 2h2M12 2h2a2 2 0 012 2v10a2 2 0 01-2 2h-2M7 9h8M11 6l3 3-3 3" />
-  </svg>
-);
+// Dropdown Component
+function Dropdown({ trigger, children, align = 'left' }: { trigger: React.ReactNode; children: React.ReactNode; align?: 'left' | 'right' }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  return (
+    <div
+      ref={dropdownRef}
+      className="relative"
+      onMouseEnter={() => setIsOpen(true)}
+      onMouseLeave={() => setIsOpen(false)}
+    >
+      {trigger}
+      {isOpen && (
+        <div className={`absolute top-full ${align === 'right' ? 'right-0' : 'left-0'} py-1 bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-[var(--shadow-md)] min-w-[140px] z-50`}>
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DropdownItem({ href, children, active = false }: { href: string; children: React.ReactNode; active?: boolean }) {
+  return (
+    <Link
+      href={href}
+      className={`block px-4 py-2 text-sm transition-colors ${
+        active
+          ? 'text-[var(--accent)] bg-[var(--accent-subtle)]'
+          : 'text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)]'
+      }`}
+    >
+      {children}
+    </Link>
+  );
+}
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -74,6 +114,7 @@ export default function Navbar() {
     }`}>
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
+          {/* Left: Logo + Menu */}
           <div className="flex items-center">
             <Link href="/" className="flex items-center gap-3 group">
               <LogoIcon />
@@ -82,68 +123,70 @@ export default function Navbar() {
               </span>
             </Link>
 
-            <div className="ml-10 hidden md:flex items-center gap-1">
+            <div className="ml-8 hidden md:flex items-center gap-1">
               <Link href="/" className={linkClass('/')}>
                 首页
               </Link>
+
               <Link href="/items" className={linkClass('/items')}>
                 物品市场
               </Link>
+
               <Link href="/market" className={linkClass('/market')}>
                 行情中心
               </Link>
 
               {isAuthenticated && (
                 <>
-                  <Link href="/items/create" className={linkClass('/items/create')}>
-                    发布物品
+                  <Link href="/wallet" className={linkClass('/wallet')}>
+                    钱包
                   </Link>
                   <Link href="/orders" className={linkClass('/orders')}>
                     我的订单
                   </Link>
-                  <Link href="/wallet" className={linkClass('/wallet')}>
-                    钱包
-                  </Link>
-                  <Link href="/profile" className={linkClass('/profile')}>
-                    个人中心
-                  </Link>
-
-                  {user?.role === 'ADMIN' && (
-                    <Link href="/admin" className={`px-4 py-2 font-medium rounded-lg transition-all duration-150 ${
-                      isActive('/admin')
-                        ? 'text-[var(--accent-light)] bg-[var(--accent-subtle)]'
-                        : 'text-[var(--accent-light)] hover:bg-[var(--accent-subtle)]'
-                    }`}>
-                      管理后台
-                    </Link>
-                  )}
                 </>
               )}
             </div>
           </div>
 
+          {/* Right: User Menu */}
           <div className="flex items-center gap-3">
             {isAuthenticated ? (
-              <div className="flex items-center gap-3">
-                <div className="hidden sm:flex items-center gap-3 px-4 py-2 bg-[var(--surface-hover)] rounded-lg">
-                  <div className="w-8 h-8 rounded-full bg-[var(--accent-subtle)] flex items-center justify-center">
-                    <span className="text-sm font-semibold text-[var(--accent)]">
-                      {user?.email?.[0]?.toUpperCase()}
-                    </span>
-                  </div>
-                  <span className="text-sm font-medium text-[var(--text-muted)]">
-                    {user?.email}
-                  </span>
-                </div>
-
-                <button
-                  onClick={logout}
-                  className="flex items-center gap-2 px-4 py-2 bg-[var(--surface)] border border-[var(--border)] rounded-lg text-[var(--text-muted)] hover:text-[var(--accent-light)] hover:border-[var(--accent-light)] transition-all duration-150"
+              <>
+                {/* User Dropdown */}
+                <Dropdown
+                  align="right"
+                  trigger={
+                    <div className="flex items-center gap-2 px-3 py-2 bg-[var(--surface-hover)] rounded-lg cursor-pointer hover:bg-[var(--surface)] transition-colors">
+                      <div className="w-8 h-8 rounded-full bg-[var(--accent-subtle)] flex items-center justify-center">
+                        <span className="text-sm font-semibold text-[var(--accent)]">
+                          {user?.email?.[0]?.toUpperCase()}
+                        </span>
+                      </div>
+                      <span className="text-sm font-medium text-[var(--text-muted)] hidden sm:inline">
+                        {user?.email}
+                      </span>
+                      <ChevronDownIcon />
+                    </div>
+                  }
                 >
-                  <LogoutIcon />
-                  <span className="hidden sm:inline">退出</span>
-                </button>
-              </div>
+                  {user?.role === 'ADMIN' && (
+                    <DropdownItem href="/admin" active={isActive('/admin')}>
+                      管理后台
+                    </DropdownItem>
+                  )}
+                  <DropdownItem href="/profile" active={isActive('/profile')}>
+                    个人中心
+                  </DropdownItem>
+                  <div className="h-px bg-[var(--border)] my-1" />
+                  <button
+                    onClick={logout}
+                    className="block w-full text-left px-4 py-2 text-sm text-[var(--text-muted)] hover:text-red-500 hover:bg-[var(--surface-hover)] transition-colors"
+                  >
+                    退出登录
+                  </button>
+                </Dropdown>
+              </>
             ) : (
               <div className="flex items-center gap-2">
                 <Link href="/login" className={`px-4 py-2 font-medium transition-all duration-150 ${
@@ -162,6 +205,7 @@ export default function Navbar() {
               </div>
             )}
 
+            {/* Mobile Menu Button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="md:hidden p-2.5 rounded-lg hover:bg-[var(--surface-hover)] text-[var(--text-muted)] transition-colors"
@@ -194,22 +238,17 @@ export default function Navbar() {
 
             {isAuthenticated && (
               <>
-                <div className="h-px bg-[var(--border)] my-2" />
-                <Link href="/items/create" className={`block px-4 py-3 rounded-lg ${
-                  isActive('/items/create') ? 'bg-[var(--accent-subtle)] text-[var(--accent)]' : 'text-[var(--text-muted)] hover:bg-[var(--surface-hover)]'
-                }`}>
-                  发布物品
-                </Link>
-                <Link href="/orders" className={`block px-4 py-3 rounded-lg ${
-                  isActive('/orders') ? 'bg-[var(--accent-suble)] text-[var(--accent)]' : 'text-[var(--text-muted)] hover:bg-[var(--surface-hover)]'
-                }`}>
-                  我的订单
-                </Link>
                 <Link href="/wallet" className={`block px-4 py-3 rounded-lg ${
                   isActive('/wallet') ? 'bg-[var(--accent-subtle)] text-[var(--accent)]' : 'text-[var(--text-muted)] hover:bg-[var(--surface-hover)]'
                 }`}>
                   钱包
                 </Link>
+                <Link href="/orders" className={`block px-4 py-3 rounded-lg ${
+                  isActive('/orders') ? 'bg-[var(--accent-subtle)] text-[var(--accent)]' : 'text-[var(--text-muted)] hover:bg-[var(--surface-hover)]'
+                }`}>
+                  我的订单
+                </Link>
+                <div className="h-px bg-[var(--border)] my-2" />
                 <Link href="/profile" className={`block px-4 py-3 rounded-lg ${
                   isActive('/profile') ? 'bg-[var(--accent-subtle)] text-[var(--accent)]' : 'text-[var(--text-muted)] hover:bg-[var(--surface-hover)]'
                 }`}>
@@ -217,11 +256,18 @@ export default function Navbar() {
                 </Link>
                 {user?.role === 'ADMIN' && (
                   <Link href="/admin" className={`block px-4 py-3 rounded-lg ${
-                    isActive('/admin') ? 'bg-[var(--accent-subtle)] text-[var(--accent-light)]' : 'text-[var(--accent-light)] hover:bg-[var(--accent-subtle)]'
+                    isActive('/admin') ? 'bg-[var(--accent-subtle)] text-[var(--accent)]' : 'text-[var(--text-muted)] hover:bg-[var(--surface-hover)]'
                   }`}>
                     管理后台
                   </Link>
                 )}
+                <div className="h-px bg-[var(--border)] my-2" />
+                <button
+                  onClick={logout}
+                  className="block w-full text-left px-4 py-3 rounded-lg text-[var(--text-muted)] hover:text-red-500 hover:bg-[var(--surface-hover)]"
+                >
+                  退出登录
+                </button>
               </>
             )}
           </div>

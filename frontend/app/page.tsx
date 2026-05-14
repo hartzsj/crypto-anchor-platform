@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { itemsApi } from '@/lib/api';
+import { itemsApi, marketApi } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface Item {
@@ -21,6 +21,19 @@ interface Item {
   };
   createdAt: string;
 }
+
+interface PriceInfo {
+  price: number;
+  change24h: number;
+}
+
+const TOKENS = [
+  { symbol: 'BTC', name: 'Bitcoin', color: '#F7931A' },
+  { symbol: 'ETH', name: 'Ethereum', color: '#627EEA' },
+  { symbol: 'BNB', name: 'BNB', color: '#F3BA2F' },
+  { symbol: 'TRX', name: 'TRON', color: '#EF0027' },
+  { symbol: 'USDT', name: 'Tether', color: '#26A17B' },
+];
 
 // SVG Icons
 const WalletIcon = () => (
@@ -59,10 +72,12 @@ const PackageIcon = () => (
 export default function HomePage() {
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
+  const [prices, setPrices] = useState<Record<string, PriceInfo>>({});
   const { isAuthenticated } = useAuth();
 
   useEffect(() => {
     loadItems();
+    loadPrices();
   }, []);
 
   const loadItems = async () => {
@@ -73,6 +88,15 @@ export default function HomePage() {
       console.error('Failed to load items:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadPrices = async () => {
+    try {
+      const response = await marketApi.getPrices(TOKENS.map(t => t.symbol));
+      setPrices(response.data || {});
+    } catch (error) {
+      console.error('Failed to load prices:', error);
     }
   };
 
@@ -164,6 +188,45 @@ export default function HomePage() {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Crypto Prices Section */}
+      <section className="py-8 bg-[var(--canvas)] border-y border-[var(--border)]">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-6 overflow-x-auto pb-2">
+            <h2 className="text-lg font-semibold text-[var(--text)] whitespace-nowrap">实时行情</h2>
+            {TOKENS.map((token) => {
+              const priceInfo = prices[token.symbol];
+              const changePositive = priceInfo?.change24h >= 0;
+
+              return (
+                <Link
+                  key={token.symbol}
+                  href="/market"
+                  className="flex items-center gap-2 px-3 py-2 bg-[var(--surface)] rounded-lg border border-[var(--border)] hover:border-[var(--accent)] transition-all duration-200 whitespace-nowrap"
+                >
+                  <div
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs"
+                    style={{ backgroundColor: token.color }}
+                  >
+                    {token.symbol.slice(0, 2)}
+                  </div>
+                  <span className="font-semibold text-[var(--text)]">{token.symbol}</span>
+                  <span className="text-sm font-mono text-[var(--text-muted)]">
+                    ${priceInfo?.price?.toLocaleString(undefined, { maximumFractionDigits: 2 }) || '--'}
+                  </span>
+                  <span className={`text-xs font-medium ${changePositive ? 'text-green-600' : 'text-red-600'}`}>
+                    {changePositive ? '+' : ''}{priceInfo?.change24h?.toFixed(1) || '--'}%
+                  </span>
+                </Link>
+              );
+            })}
+            <Link href="/market" className="flex items-center gap-1 text-sm text-[var(--accent)] hover:text-[var(--accent-hover)] font-medium transition-colors whitespace-nowrap">
+              更多
+              <ArrowIcon />
+            </Link>
           </div>
         </div>
       </section>

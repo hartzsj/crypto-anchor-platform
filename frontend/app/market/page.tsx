@@ -22,6 +22,12 @@ interface HistoryData {
   price: number;
 }
 
+// 数据缓存类型
+type DataCache = {
+  klines: Record<string, Record<string, KlineData[]>>; // token -> interval -> data
+  history: Record<string, HistoryData[]>; // token -> data
+};
+
 const TOKENS = [
   { symbol: 'BTC', name: 'Bitcoin', color: '#F7931A' },
   { symbol: 'ETH', name: 'Ethereum', color: '#627EEA' },
@@ -40,10 +46,16 @@ export default function MarketPage() {
   const [prices, setPrices] = useState<Record<string, PriceInfo>>({});
   const [selectedToken, setSelectedToken] = useState('BTC');
   const [selectedInterval, setSelectedInterval] = useState('1d');
-  const [klineData, setKlineData] = useState<KlineData[]>([]);
-  const [historyData, setHistoryData] = useState<HistoryData[]>([]);
-  const [loading, setLoading] = useState(true);
   const [chartType, setChartType] = useState<'candlestick' | 'line'>('candlestick');
+
+  // 缓存所有数据
+  const [dataCache, setDataCache] = useState<DataCache>({
+    klines: {},
+    history: {},
+  });
+
+  // 预加载进度
+  const [preloadProgress, setPreloadProgress] = useState(0);
 
   const klineChartContainerRef = useRef<HTMLDivElement>(null);
   const historyChartContainerRef = useRef<HTMLDivElement>(null);
@@ -51,6 +63,101 @@ export default function MarketPage() {
   const historyChartRef = useRef<IChartApi | null>(null);
   const klineSeriesRef = useRef<ISeriesApi<'Candlestick'> | ISeriesApi<'Line'> | null>(null);
   const historySeriesRef = useRef<ISeriesApi<'Area'> | null>(null);
+
+  // 格式化K线数据
+  const formatKlineData = (data: any[]): KlineData[] =>
+    data.map((item: any) => ({
+      time: item.time || item.timestamp || item.date,
+      open: Number(item.open),
+      high: Number(item.high),
+      low: Number(item.low),
+      close: Number(item.close),
+    }));
+
+  // 格式化历史数据
+  const formatHistoryData = (data: any[]): HistoryData[] =>
+    data.map((item: any) => ({
+      time: item.time || item.timestamp || item.date,
+      price: Number(item.price),
+    }));
+
+  // 加载单个币种的数据
+  const loadTokenData = async (token: string, interval: string) => {
+    try {
+      const [klineRes, historyRes] = await Promise.all([
+        marketApi.getKlines(token, interval, 100),
+        marketApi.getHistory(token, 30),
+      ]);
+
+      setDataCache(prev => ({
+        klines: {
+          ...prev.klines,
+          [token]: {
+            ...prev.klines[token],
+            [interval]: formatKlineData(klineRes.data || []),
+          },
+        },
+        history: {
+          ...prev.history,
+          [token]: formatHistoryData(historyRes.data || []),
+        },
+      }));
+    } catch (error) {
+      console.error(`Failed to load ${token} data:`, error);
+    }
+  };
+
+  // 后台预加载其他币种数据（不阻塞主流程）
+  const preloadOtherTokensInBackground = async () => {
+    const totalTasks = (TOKENS.length - 1) * INTERVALS.length + (TOKENS.length - 1);
+    let completedTasks = 0;
+
+    // 预加载除当前选中币种外的其他币种
+    for (const token of TOKENS) {
+      if (token.symbol === selectedToken) continue;
+
+      // K线数据
+      for (const interval of INTERVALS) {
+        marketApi.getKlines(token.symbol, interval.value, 100)
+          .then((res) => {
+            setDataCache(prev => ({
+              klines: {
+                ...prev.klines,
+                [token.symbol]: {
+                  ...prev.klines[token.symbol],
+                  [interval.value]: formatKlineData(res.data || []),
+                },
+              },
+              history: prev.history,
+            }));
+            completedTasks++;
+            setPreloadProgress(Math.round((completedTasks / totalTasks) * 100));
+          })
+          .catch(() => {
+            completedTasks++;
+            setPreloadProgress(Math.round((completedTasks / totalTasks) * 100));
+          });
+      }
+
+      // 历史数据
+      marketApi.getHistory(token.symbol, 30)
+        .then((res) => {
+          setDataCache(prev => ({
+            klines: prev.klines,
+            history: {
+              ...prev.history,
+              [token.symbol]: formatHistoryData(res.data || []),
+            },
+          }));
+          completedTasks++;
+          setPreloadProgress(Math.round((completedTasks / totalTasks) * 100));
+        })
+        .catch(() => {
+          completedTasks++;
+          setPreloadProgress(Math.round((completedTasks / totalTasks) * 100));
+        });
+    }
+  };
 
   // 加载价格数据
   const loadPrices = async () => {
@@ -62,53 +169,13 @@ export default function MarketPage() {
     }
   };
 
-  // 加载K线数据
-  const loadKlineData = async () => {
-    setLoading(true);
-    try {
-      const res = await marketApi.getKlines(selectedToken, selectedInterval, 100);
-      const data = res.data || [];
-
-      // 转换数据格式
-      const formattedData = data.map((item: any) => ({
-        time: item.time || item.timestamp,
-        open: Number(item.open),
-        high: Number(item.high),
-        low: Number(item.low),
-        close: Number(item.close),
-      }));
-
-      setKlineData(formattedData);
-    } catch (error) {
-      console.error('Failed to load kline data:', error);
-      setKlineData([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // 加载历史价格数据
-  const loadHistoryData = async () => {
-    try {
-      const res = await marketApi.getHistory(selectedToken, 30);
-      const data = res.data || [];
-
-      // 转换数据格式
-      const formattedData = data.map((item: any) => ({
-        time: item.time || item.timestamp,
-        price: Number(item.price),
-      }));
-
-      setHistoryData(formattedData);
-    } catch (error) {
-      console.error('Failed to load history data:', error);
-      setHistoryData([]);
-    }
-  };
+  // 获取当前选中的K线数据
+  const currentKlineData = dataCache.klines[selectedToken]?.[selectedInterval] || [];
+  const currentHistoryData = dataCache.history[selectedToken] || [];
 
   // 初始化K线图表
   const initKlineChart = useCallback(() => {
-    if (!klineChartContainerRef.current) return;
+    if (!klineChartContainerRef.current || currentKlineData.length === 0) return;
 
     // 清除旧图表
     if (klineChartRef.current) {
@@ -123,8 +190,8 @@ export default function MarketPage() {
         textColor: 'var(--text-muted)',
       },
       grid: {
-        vertLines: { color: 'var(--border-subtle)' },
-        horzLines: { color: 'var(--border-subtle)' },
+        vertLines: { visible: false },
+        horzLines: { visible: false },
       },
       crosshair: {
         mode: 1,
@@ -154,29 +221,23 @@ export default function MarketPage() {
         wickDownColor: '#ef5350',
       });
       klineSeriesRef.current = candlestickSeries;
-
-      if (klineData.length > 0) {
-        candlestickSeries.setData(klineData as CandlestickData[]);
-      }
+      candlestickSeries.setData(currentKlineData as CandlestickData[]);
     } else {
       const lineSeries = chart.addLineSeries({
         color: tokenInfo?.color || '#2962FF',
         lineWidth: 2,
       });
       klineSeriesRef.current = lineSeries;
-
-      if (klineData.length > 0) {
-        const lineData = klineData.map(d => ({ time: d.time, value: d.close }));
-        lineSeries.setData(lineData as LineData[]);
-      }
+      const lineData = currentKlineData.map(d => ({ time: d.time, value: d.close }));
+      lineSeries.setData(lineData as LineData[]);
     }
 
     chart.timeScale().fitContent();
-  }, [klineData, selectedToken, chartType]);
+  }, [currentKlineData, selectedToken, chartType]);
 
   // 初始化历史价格图表
   const initHistoryChart = useCallback(() => {
-    if (!historyChartContainerRef.current) return;
+    if (!historyChartContainerRef.current || currentHistoryData.length === 0) return;
 
     // 清除旧图表
     if (historyChartRef.current) {
@@ -191,8 +252,8 @@ export default function MarketPage() {
         textColor: 'var(--text-muted)',
       },
       grid: {
-        vertLines: { color: 'var(--border-subtle)' },
-        horzLines: { color: 'var(--border-subtle)' },
+        vertLines: { visible: false },
+        horzLines: { visible: false },
       },
       rightPriceScale: {
         borderColor: 'var(--border)',
@@ -215,14 +276,11 @@ export default function MarketPage() {
     });
 
     historySeriesRef.current = areaSeries;
-
-    if (historyData.length > 0) {
-      const areaData = historyData.map(d => ({ time: d.time, value: d.price }));
-      areaSeries.setData(areaData as AreaData[]);
-    }
+    const areaData = currentHistoryData.map(d => ({ time: d.time, value: d.price }));
+    areaSeries.setData(areaData as AreaData[]);
 
     chart.timeScale().fitContent();
-  }, [historyData, selectedToken]);
+  }, [currentHistoryData, selectedToken]);
 
   // 监听窗口大小变化
   useEffect(() => {
@@ -243,36 +301,38 @@ export default function MarketPage() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // 初始化加载
+  // 初始化：先加载当前币种数据，再后台预加载其他币种
   useEffect(() => {
     loadPrices();
-    loadKlineData();
-    loadHistoryData();
+    loadTokenData(selectedToken, selectedInterval);
+    preloadOtherTokensInBackground();
   }, []);
 
-  // 代币或间隔变化时重新加载
+  // 当币种或间隔变化时，如果数据未缓存则立即加载
   useEffect(() => {
-    loadKlineData();
-    loadHistoryData();
+    const klineCached = dataCache.klines[selectedToken]?.[selectedInterval];
+    const historyCached = dataCache.history[selectedToken];
+    if (!klineCached || !historyCached) {
+      loadTokenData(selectedToken, selectedInterval);
+    }
   }, [selectedToken, selectedInterval]);
 
-  // K线数据变化时更新图表
+  // 数据变化时更新图表
   useEffect(() => {
-    if (klineData.length > 0) {
+    if (currentKlineData.length > 0) {
       initKlineChart();
     }
-  }, [klineData, initKlineChart]);
+  }, [currentKlineData, initKlineChart]);
 
-  // 历史数据变化时更新图表
   useEffect(() => {
-    if (historyData.length > 0) {
+    if (currentHistoryData.length > 0) {
       initHistoryChart();
     }
-  }, [historyData, initHistoryChart]);
+  }, [currentHistoryData, initHistoryChart]);
 
   // 自动刷新价格
   useEffect(() => {
-    const interval = setInterval(loadPrices, 30000); // 30秒刷新
+    const interval = setInterval(loadPrices, 30000);
     return () => clearInterval(interval);
   }, []);
 
@@ -394,13 +454,10 @@ export default function MarketPage() {
           <h2 className="text-lg font-semibold text-[var(--text)] mb-4">
             {chartType === 'candlestick' ? 'K线图表' : '价格走势'}
           </h2>
-          {loading ? (
-            <div className="h-[300px] flex items-center justify-center">
-              <div className="skeleton w-full h-full rounded-xl" />
-            </div>
-          ) : klineData.length === 0 ? (
-            <div className="h-[300px] flex items-center justify-center">
-              <p className="text-[var(--text-muted)]">暂无数据</p>
+          {currentKlineData.length === 0 ? (
+            <div className="h-[300px] flex flex-col items-center justify-center gap-3">
+              <div className="skeleton w-full h-[280px] rounded-xl" />
+              <p className="text-sm text-[var(--text-muted)]">加载中...</p>
             </div>
           ) : (
             <div ref={klineChartContainerRef} className="w-full h-[300px]" />
@@ -410,13 +467,10 @@ export default function MarketPage() {
         {/* History Price Chart */}
         <div className="bg-[var(--surface)] p-6 rounded-2xl border border-[var(--border)] shadow-[var(--shadow-sm)] mb-6">
           <h2 className="text-lg font-semibold text-[var(--text)] mb-4">30天历史走势</h2>
-          {loading ? (
-            <div className="h-[200px] flex items-center justify-center">
-              <div className="skeleton w-full h-full rounded-xl" />
-            </div>
-          ) : historyData.length === 0 ? (
-            <div className="h-[200px] flex items-center justify-center">
-              <p className="text-[var(--text-muted)]">暂无数据</p>
+          {currentHistoryData.length === 0 ? (
+            <div className="h-[200px] flex flex-col items-center justify-center gap-3">
+              <div className="skeleton w-full h-[180px] rounded-xl" />
+              <p className="text-sm text-[var(--text-muted)]">加载中...</p>
             </div>
           ) : (
             <div ref={historyChartContainerRef} className="w-full h-[200px]" />
