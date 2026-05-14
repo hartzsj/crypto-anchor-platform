@@ -89,6 +89,9 @@ export default function Navbar() {
               <Link href="/items" className={linkClass('/items')}>
                 物品市场
               </Link>
+              <Link href="/market" className={linkClass('/market')}>
+                行情中心
+              </Link>
 
               {isAuthenticated && (
                 <>
@@ -182,6 +185,11 @@ export default function Navbar() {
               isActive('/items') ? 'bg-[var(--accent-subtle)] text-[var(--accent)]' : 'text-[var(--text-muted)] hover:bg-[var(--surface-hover)]'
             }`}>
               物品市场
+            </Link>
+            <Link href="/market" className={`block px-4 py-3 rounded-lg ${
+              isActive('/market') ? 'bg-[var(--accent-subtle)] text-[var(--accent)]' : 'text-[var(--text-muted)] hover:bg-[var(--surface-hover)]'
+            }`}>
+              行情中心
             </Link>
 
             {isAuthenticated && (
