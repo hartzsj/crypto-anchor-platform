@@ -1,6 +1,8 @@
 import { Controller, Get, Post, Body, Query, UseGuards, Request } from '@nestjs/common';
 import { WalletsService } from './wallets.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { DepositDto } from './dto/deposit.dto';
+import { WithdrawDto } from './dto/withdraw.dto';
 
 @Controller('wallets')
 @UseGuards(JwtAuthGuard)
@@ -13,10 +15,7 @@ export class WalletsController {
   }
 
   @Post('deposit')
-  async deposit(
-    @Request() req,
-    @Body() body: { amount: number; network?: string; token?: string; description?: string }
-  ) {
+  async deposit(@Request() req, @Body() body: DepositDto) {
     const network = body.network || 'TRON';
     const token = body.token || 'USDT';
     return this.walletsService.deposit(
@@ -30,10 +29,7 @@ export class WalletsController {
   }
 
   @Post('withdraw')
-  async withdraw(
-    @Request() req,
-    @Body() body: { amount: number; address: string; network?: string; token?: string }
-  ) {
+  async withdraw(@Request() req, @Body() body: WithdrawDto) {
     const network = body.network || 'TRON';
     const token = body.token || 'USDT';
     return this.walletsService.withdraw(

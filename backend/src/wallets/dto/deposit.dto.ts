@@ -8,5 +8,13 @@ export class DepositDto {
 
   @IsOptional()
   @IsString()
+  network?: string;
+
+  @IsOptional()
+  @IsString()
+  token?: string;
+
+  @IsOptional()
+  @IsString()
   description?: string;
 }

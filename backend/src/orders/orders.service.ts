@@ -165,45 +165,154 @@ export class OrdersService {
 
   // 完成订单（释放资金给卖家）
   private async completeOrder(orderId: string) {
-    const order = await this.prisma.order.findUnique({
-      where: { id: orderId },
-      include: { item: true },
+    return this.prisma.$transaction(async (tx) => {
+      // 在事务中查询并锁定订单
+      const order = await tx.order.findUnique({
+        where: { id: orderId },
+        include: { item: true },
+      });
+
+      if (!order) {
+        throw new NotFoundException('订单不存在');
+      }
+
+      // 检查订单状态，防止重复完成
+      if (order.status !== 'SHIPPED' && order.status !== 'DISPUTED') {
+        throw new BadRequestException(`订单状态为 ${order.status}，无法完成`);
+      }
+
+      // 释放资金给卖家
+      const buyerWallet = await tx.wallet.findUnique({
+        where: { userId: order.buyerId },
+      });
+
+      const sellerWallet = await tx.wallet.findUnique({
+        where: { userId: order.sellerId },
+      });
+
+      if (!buyerWallet || !sellerWallet) {
+        throw new NotFoundException('钱包不存在');
+      }
+
+      // 获取代币信息
+      const network = await tx.blockchainNetwork.findFirst({
+        where: { name: 'TRON' },
+      });
+
+      const token = await tx.token.findFirst({
+        where: { networkId: network!.id, symbol: 'USDT' },
+      });
+
+      if (!token) {
+        throw new BadRequestException('代币不存在');
+      }
+
+      // 检查买家冻结余额
+      const buyerBalance = await tx.walletBalance.findUnique({
+        where: {
+          walletId_tokenId: {
+            walletId: buyerWallet.id,
+            tokenId: token.id,
+          },
+        },
+      });
+
+      const amount = Number(order.price);
+      if (!buyerBalance || Number(buyerBalance.frozenBalance) < amount) {
+        throw new BadRequestException('冻结资金不足');
+      }
+
+      // 获取卖家当前余额
+      const sellerBalance = await tx.walletBalance.findUnique({
+        where: {
+          walletId_tokenId: {
+            walletId: sellerWallet.id,
+            tokenId: token.id,
+          },
+        },
+      });
+
+      const sellerBalanceBefore = sellerBalance ? Number(sellerBalance.balance) : 0;
+      const sellerBalanceAfter = sellerBalanceBefore + amount;
+
+      // 从买家冻结扣除
+      await tx.walletBalance.update({
+        where: {
+          walletId_tokenId: {
+            walletId: buyerWallet.id,
+            tokenId: token.id,
+          },
+        },
+        data: {
+          frozenBalance: { decrement: amount },
+        },
+      });
+
+      // 加到卖家余额
+      if (sellerBalance) {
+        await tx.walletBalance.update({
+          where: {
+            walletId_tokenId: {
+              walletId: sellerWallet.id,
+              tokenId: token.id,
+            },
+          },
+          data: {
+            balance: sellerBalanceAfter,
+          },
+        });
+      } else {
+        await tx.walletBalance.create({
+          data: {
+            walletId: sellerWallet.id,
+            tokenId: token.id,
+            balance: sellerBalanceAfter,
+            frozenBalance: 0,
+          },
+        });
+      }
+
+      // 记录交易
+      await tx.transaction.create({
+        data: {
+          walletId: sellerWallet.id,
+          tokenId: token.id,
+          type: 'ORDER_RELEASE',
+          amount: amount,
+          balanceBefore: sellerBalanceBefore,
+          balanceAfter: sellerBalanceAfter,
+          orderId,
+          description: '订单完成，资金释放',
+        },
+      });
+
+      // 标记物品为已售出
+      await tx.item.update({
+        where: { id: order.itemId },
+        data: { status: 'SOLD' },
+      });
+
+      // 更新订单状态
+      const updatedOrder = await tx.order.update({
+        where: { id: orderId },
+        data: {
+          status: 'COMPLETED',
+          completedAt: new Date(),
+        },
+      });
+
+      // 发送通知给买家和卖家（事务外处理）
+      // 注意：通知发送应该在事务成功后进行
+      return { order: updatedOrder, itemTitle: order.item?.title };
+    }).then(async (result) => {
+      // 事务成功后发送通知
+      await this.notificationsService.sendBulkNotifications(
+        [result.order.buyerId, result.order.sellerId],
+        NotificationType.ORDER_COMPLETED,
+        { orderId: result.order.id, itemTitle: result.itemTitle },
+      );
+      return result.order;
     });
-
-    if (!order) {
-      throw new NotFoundException('订单不存在');
-    }
-
-    // 释放资金给卖家
-    await this.walletsService.transferToSeller(
-      order.buyerId,
-      order.sellerId,
-      Number(order.price),
-      orderId,
-      'TRON',
-      'USDT',
-    );
-
-    // 标记物品为已售出
-    await this.itemsService.markAsSold(order.itemId);
-
-    // 更新订单状态
-    const updatedOrder = await this.prisma.order.update({
-      where: { id: orderId },
-      data: {
-        status: 'COMPLETED',
-        completedAt: new Date(),
-      },
-    });
-
-    // 发送通知给买家和卖家
-    await this.notificationsService.sendBulkNotifications(
-      [order.buyerId, order.sellerId],
-      NotificationType.ORDER_COMPLETED,
-      { orderId: order.id, itemTitle: order.item?.title },
-    );
-
-    return updatedOrder;
   }
 
   // 取消订单

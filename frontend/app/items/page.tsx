@@ -3,52 +3,10 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { itemsApi } from '@/lib/api';
-
-interface Item {
-  id: string;
-  title: string;
-  description: string;
-  images: string[];
-  price: number;
-  category: string;
-  location: string;
-  seller: {
-    id: string;
-    username: string;
-    nickname: string;
-    reputation: number;
-  };
-  createdAt: string;
-}
+import { Item } from '@/lib/types';
+import { SearchIcon, FilterIcon, PackageIcon, StarIcon } from '@/components/Icons';
 
 const CATEGORIES = ['电子产品', '服装鞋帽', '家居用品', '运动户外', '图书文具', '其他'];
-
-// SVG Icons
-const SearchIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
-    <circle cx="9" cy="9" r="7" />
-    <path d="M14 14l4 4" />
-  </svg>
-);
-
-const FilterIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
-    <path d="M3 4h14M6 10h8M8 16h4" />
-  </svg>
-);
-
-const PackageIcon = () => (
-  <svg width="64" height="64" viewBox="0 0 64 64" fill="none" stroke="var(--text-muted)" strokeWidth="1">
-    <rect x="8" y="16" width="48" height="40" rx="4" />
-    <path d="M8 32h48M32 16v40" />
-  </svg>
-);
-
-const StarIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 14 14" fill="var(--accent)">
-    <path d="M7 1l1.5 3 3.5.5-2.5 2.5.5 3.5L7 9l-2.5 2 .5-3.5L2.5 5l3.5-.5L7 1z" />
-  </svg>
-);
 
 export default function ItemsPage() {
   const [items, setItems] = useState<Item[]>([]);

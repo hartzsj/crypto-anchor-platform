@@ -1,4 +1,4 @@
-import { IsNumber, IsString, Min, Max, MinLength } from 'class-validator';
+import { IsNumber, IsString, IsOptional, Min, Max, MinLength } from 'class-validator';
 
 export class WithdrawDto {
   @IsNumber()
@@ -9,4 +9,12 @@ export class WithdrawDto {
   @IsString()
   @MinLength(10, { message: '提现地址格式无效' })
   address: string;
+
+  @IsOptional()
+  @IsString()
+  network?: string;
+
+  @IsOptional()
+  @IsString()
+  token?: string;
 }

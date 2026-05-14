@@ -19,6 +19,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
   async validate(payload: any) {
     // payload 是 JWT 中的内容 { sub: userId, email, role }
-    return this.authService.validateUser(payload.sub);
+    const user = await this.authService.validateUser(payload.sub);
+    // 返回包含 id 和 userId 的对象，兼容两种用法
+    return { ...user, userId: user.id };
   }
 }

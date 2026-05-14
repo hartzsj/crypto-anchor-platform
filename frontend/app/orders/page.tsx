@@ -5,79 +5,8 @@ import { useRouter } from 'next/navigation';
 import { ordersApi } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
-
-interface Order {
-  id: string;
-  price: number;
-  status: string;
-  logisticsCompany: string;
-  trackingNumber: string;
-  createdAt: string;
-  paidAt: string;
-  shippedAt: string;
-  completedAt: string;
-  item: {
-    id: string;
-    title: string;
-    images: string[];
-  };
-  buyer?: {
-    id: string;
-    username: string;
-    nickname: string;
-  };
-  seller?: {
-    id: string;
-    username: string;
-    nickname: string;
-  };
-  review?: any;
-}
-
-const STATUS_MAP: Record<string, string> = {
-  PENDING: '待支付',
-  PAID: '已支付（托管中）',
-  SHIPPED: '已发货',
-  COMPLETED: '已完成',
-  CANCELED: '已取消',
-  DISPUTED: '争议中',
-};
-
-// SVG Icons
-const PackageIcon = () => (
-  <svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="1.5">
-    <rect x="4" y="8" width="24" height="18" rx="2" />
-    <path d="M4 12h24M16 8v18M10 8l6 4 6-4" />
-  </svg>
-);
-
-const TruckIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
-    <rect x="1" y="4" width="12" height="10" rx="1" />
-    <path d="M13 8h4l2 4v2h-6V8z" />
-    <circle cx="5" cy="14" r="2" />
-    <circle cx="15" cy="14" r="2" />
-  </svg>
-);
-
-const CheckIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M4 10l4 4 8-8" />
-  </svg>
-);
-
-const XIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M4 4l12 12M16 4l-12 12" />
-  </svg>
-);
-
-const EmptyIcon = () => (
-  <svg width="64" height="64" viewBox="0 0 64 64" fill="none" stroke="var(--text-muted)" strokeWidth="1">
-    <rect x="8" y="16" width="48" height="40" rx="4" />
-    <path d="M8 32h48M32 16v40" />
-  </svg>
-);
+import { Order, ORDER_STATUS_MAP } from '@/lib/types';
+import { PackageSmallIcon, TruckIcon, CheckIcon, XIcon, EmptyBoxIcon } from '@/components/Icons';
 
 export default function OrdersPage() {
   const { isAuthenticated } = useAuth();
@@ -244,7 +173,7 @@ export default function OrdersPage() {
           </div>
         ) : orders.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 bg-[var(--surface)] rounded-2xl border border-[var(--border)]">
-            <EmptyIcon />
+            <EmptyBoxIcon />
             <p className="mt-6 text-lg text-[var(--text-muted)]">暂无订单</p>
           </div>
         ) : (
@@ -257,7 +186,7 @@ export default function OrdersPage() {
                       {order.item.images?.[0] ? (
                         <img src={order.item.images[0]} alt="" className="w-full h-full object-cover rounded-xl" />
                       ) : (
-                        <PackageIcon />
+                        <PackageSmallIcon />
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -289,7 +218,7 @@ export default function OrdersPage() {
                       order.status === 'DISPUTED' ? 'bg-red-100 text-red-700' :
                       'bg-orange-100 text-orange-700'
                     }`}>
-                      {STATUS_MAP[order.status]}
+                      {ORDER_STATUS_MAP[order.status as keyof typeof ORDER_STATUS_MAP]}
                     </span>
 
                     <div className="mt-4 space-y-2">
